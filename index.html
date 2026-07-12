@@ -2372,6 +2372,17 @@ function showSection(id){
         // ser ANTES de que hayas iniciado sesion en la macro). Si todavia no tiene
         // sesion propia, la volvemos a revisar justo ahora, sin esperar a un reload.
         intentarSesionGuardada();
+    } else if (id === 'inspecciones' && typeof sesionActual !== 'undefined' && sesionActual && typeof mostrarTab === 'function') {
+        // Ya hay sesión iniciada: refresca la pestaña que esté activa dentro de
+        // Inspecciones para que siempre muestre datos actuales, en vez de dejar
+        // lo que haya quedado pintado la última vez (que pudo haber sido a medio
+        // cargar mientras los datos todavía venían de Supabase).
+        let panelActivo = document.querySelector("#appContenido .tab-panel.active");
+        if (panelActivo) {
+            let tabId = panelActivo.id.replace("panel", "");
+            tabId = tabId.charAt(0).toLowerCase() + tabId.slice(1);
+            mostrarTab(tabId);
+        }
     }
 }
 
