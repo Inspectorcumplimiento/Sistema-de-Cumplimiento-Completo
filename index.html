@@ -939,7 +939,7 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
         <h2>🛡️ Control de Cumplimiento</h2>
         <p class="subtitle">Sistema de Monitoreo & Continuidad </p>
         <form id="loginForm" onsubmit="login(event)">
-            <input type="text" id="username" placeholder="Usuario" required>
+            <input type="email" id="username" placeholder="Correo" required>
             <input type="password" id="password" placeholder="Contraseña" required>
             <button type="submit">Iniciar Sesión</button>
         </form>
@@ -1941,8 +1941,8 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
 // ==========================================
 // SUPABASE — CONFIGURACIÓN Y CONEXIÓN
 // ==========================================
-const SUPABASE_URL = "https://gboiiwvzpkzefabuxmus.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdib2lpd3Z6cGt6ZWZhYnV4bXVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3NTM5NTIsImV4cCI6MjA5ODMyOTk1Mn0.fvBTfgziWQWedJ9VhiNDxaig1f3QbGXmUs67PPn0h0Q";
+const SUPABASE_URL = "https://cjmzmxpqlvxprdqfjnpq.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqbXpteHBxbHZ4cHJkcWZqbnBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3NzgyNzcsImV4cCI6MjA5OTM1NDI3N30.jwQZjHKTWbDyJPj6eYD4UHM2lIXFXsnLrIw9IcYpzeg";
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 function sbActualizarIndicador(estado) {
@@ -2139,18 +2139,26 @@ function rotarSabiasQue() {
     }
 }
 
-function login(e) {
+async function login(e) {
     e.preventDefault();
-    let user = document.getElementById("username").value.trim().toLowerCase();
+    let email = document.getElementById("username").value.trim();
     let pass = document.getElementById("password").value;
-    if (USUARIOS_VALIDOS[user] && USUARIOS_VALIDOS[user].clave === pass) {
-        usuarioActivo = { username: user, ...USUARIOS_VALIDOS[user] };
-        sessionStorage.setItem("sesion_usuario", JSON.stringify(usuarioActivo));
-        verificarSesion();
-    } else { alert("Usuario o contraseña incorrectos."); }
+    const { data, error } = await _sb.auth.signInWithPassword({ email, password: pass });
+    if (error) { alert("Correo o contraseña incorrectos."); return; }
+    const username = data.user.email.split("@")[0].toLowerCase();
+    const { data: perfil, error: e2 } = await _sb.from('perfiles').select('*').eq('usuario_id', data.user.id).single();
+    if (e2 || !perfil) {
+        alert("Tu cuenta no tiene un perfil configurado todavía (nombre/rol). Pide al administrador que te agregue en la tabla 'perfiles'.");
+        await _sb.auth.signOut();
+        return;
+    }
+    usuarioActivo = { username: username, nombre: perfil.nombre, rol: perfil.rol, posicion: perfil.posicion };
+    sessionStorage.setItem("sesion_usuario", JSON.stringify(usuarioActivo));
+    verificarSesion();
 }
 
-function logout() {
+async function logout() {
+    await _sb.auth.signOut();
     sessionStorage.removeItem("sesion_usuario");
     usuarioActivo = null;
     verificarSesion();
@@ -3735,6 +3743,18 @@ function updateCharts() {
 (async () => {
     await cargarDatosDesdeSupabase();
     activarSincronizacionRealtime();
+
+    // Revisa si ya hay una sesión real de Supabase Auth (por ejemplo, si el usuario
+    // ya inicio sesion antes, o si entro primero por el modulo de Inspecciones).
+    const { data: { session } } = await _sb.auth.getSession();
+    if (session) {
+        const username = session.user.email.split("@")[0].toLowerCase();
+        const { data: perfil } = await _sb.from('perfiles').select('*').eq('usuario_id', session.user.id).single();
+        if (perfil) {
+            usuarioActivo = { username: username, nombre: perfil.nombre, rol: perfil.rol, posicion: perfil.posicion };
+            sessionStorage.setItem("sesion_usuario", JSON.stringify(usuarioActivo));
+        }
+    }
     verificarSesion();
 })();
 </script>
