@@ -4264,7 +4264,9 @@ function entrarAlApp() {
     `;
     document.getElementById("tabBtnTipos").style.display = sesionActual.rol === "superadmin" ? "inline-block" : "none";
     document.getElementById("tabBtnInicio").style.display = esAuditor() ? "none" : "inline-block";
-    mostrarTab(esAuditor() ? "historial" : "inicio");
+    requestAnimationFrame(() => {
+        mostrarTab(esAuditor() ? "historial" : "inicio");
+    });
 }
 
 async function intentarSesionGuardada() {
