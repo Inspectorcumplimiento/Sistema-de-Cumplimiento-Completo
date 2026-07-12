@@ -674,6 +674,72 @@ table select {
     }
 }
 
+/* ==================== RESPONSIVE: TODA LA APP (tablet, ≤1024px) ==================== */
+@media (max-width: 1024px) {
+    .main { padding: 24px 18px; }
+    .cards { grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); }
+}
+
+/* ==================== RESPONSIVE: TODA LA APP (celular, ≤768px) ==================== */
+@media (max-width: 768px) {
+    body { -webkit-tap-highlight-color: transparent; }
+
+    /* El sidebar fijo de 280px no cabe en un celular: se convierte en una
+       barra superior que se desliza horizontalmente, igual que en Inspecciones. */
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: static;
+        display: flex;
+        align-items: center;
+        overflow-x: auto;
+        padding: 10px 12px;
+        -webkit-overflow-scrolling: touch;
+        white-space: nowrap;
+    }
+    .sidebar h2 { display: none; }
+    .sidebar .user-box { flex-shrink: 0; margin-right: 10px; padding: 6px 10px; }
+    .sidebar a {
+        flex-shrink: 0;
+        white-space: nowrap;
+        padding: 10px 14px !important;
+        font-size: 13px !important;
+    }
+
+    .main { margin-left: 0; padding: 16px 14px 60px 14px; }
+    h1 { font-size: 21px; margin-bottom: 16px; }
+    h2.section-title { font-size: 17px; margin-top: 26px; }
+
+    .cards { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .card { padding: 14px; }
+    .card h3 { font-size: 12.5px; }
+
+    /* Formularios: una sola columna, campos grandes y con letra de 16px para
+       que iOS no haga zoom automatico al tocar un campo. */
+    input, select, textarea {
+        font-size: 16px !important;
+        min-height: 44px;
+    }
+    form { display: flex; flex-direction: column; }
+    .calendar-filter-box { flex-direction: column; align-items: stretch; }
+    .export-bar { flex-direction: column; align-items: stretch; }
+    .export-bar button, .btn-export-pdf { width: 100%; }
+
+    /* Botones con area de toque comoda */
+    button { min-height: 42px; }
+
+    /* Tablas: scroll horizontal para no romper el diseño */
+    table { display: block; overflow-x: auto; white-space: nowrap; }
+    th, td { padding: 10px 12px; font-size: 13px; }
+
+    .kpi-cards { grid-template-columns: 1fr 1fr; gap: 10px; }
+}
+
+@media (max-width: 420px) {
+    .cards { grid-template-columns: 1fr; }
+    .kpi-cards { grid-template-columns: 1fr; }
+}
+
 /* ==================== ESTILOS DEL MODULO INSPECCIONES (aislados, prefijo insp-) ==================== */
 :root {
     --sidebar-bg: #14203B;
@@ -3773,7 +3839,11 @@ function updateCharts() {
    la dan las políticas RLS de cada tabla en Supabase. */
 const INSP_SUPABASE_URL = "https://cjmzmxpqlvxprdqfjnpq.supabase.co";
 const INSP_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqbXpteHBxbHZ4cHJkcWZqbnBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3NzgyNzcsImV4cCI6MjA5OTM1NDI3N30.jwQZjHKTWbDyJPj6eYD4UHM2lIXFXsnLrIw9IcYpzeg";
-const sb = supabase.createClient(INSP_SUPABASE_URL, INSP_SUPABASE_ANON_KEY);
+// Antes esto creaba un segundo cliente de Supabase independiente. Ahora usa
+// exactamente el mismo cliente que ya inicio sesion en la macro (_sb),
+// para que la sesion este SIEMPRE sincronizada entre los dos modulos, sin
+// importar el orden en que se entra a cada uno.
+const sb = _sb;
 
 /* ---- Indicador de sincronización: avisa mientras guarda, si quedó bien, o si algo falló ---- */
 let syncTimeoutId = null;
