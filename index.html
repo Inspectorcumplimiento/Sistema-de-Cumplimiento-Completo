@@ -903,6 +903,50 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
 .chip { display:inline-flex; align-items:center; gap:5px; background:var(--bg-light); border:1px solid var(--line); border-radius:20px; padding:5px 12px; font-size:12px; font-weight:600; color:var(--ink); }
 .chip-admin { background:#FCEEE9; color:#C2620F; border-color:#F3D2BE; }
 
+/* ===== Catálogo de Tipos de Inspección ===== */
+:root {
+    --empresa-notions: var(--accent-blue);
+    --empresa-gtg: #7B5FD9;
+    --empresa-now: #0E9A9D;
+}
+.catalogo-stats { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+.catalogo-stat { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:10px 16px; display:flex; align-items:baseline; gap:8px; box-shadow:var(--shadow-sm); }
+.catalogo-stat b { font-family:var(--font-display); font-size:18px; }
+.catalogo-stat span { font-size:11.5px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.4px; font-weight:600; }
+
+.acordeon-card { padding:0; overflow:hidden; }
+.acordeon-header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:18px 22px; cursor:pointer; user-select:none; }
+.acordeon-header:hover { background:var(--bg-light); }
+.acordeon-header h3 { margin:0; font-size:14px; }
+.acordeon-header .acordeon-sub { font-size:12px; color:var(--text-muted); font-weight:400; margin-top:2px; }
+.acordeon-chevron { font-size:13px; color:var(--text-muted); transition:transform .2s var(--ease); flex-shrink:0; }
+.acordeon-card.abierto .acordeon-chevron { transform:rotate(180deg); }
+.acordeon-body { display:none; }
+.acordeon-card.abierto .acordeon-body { display:block; animation:fadeIn .2s var(--ease); }
+.acordeon-body-inner { padding:2px 22px 22px 22px; border-top:1px solid var(--line); }
+
+.catalogo-toolbar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:16px; }
+.catalogo-buscador { flex:1 1 220px; position:relative; }
+.catalogo-buscador input { width:100%; padding:9px 12px 9px 34px; border:1.5px solid var(--line); border-radius:9px; font-size:13px; font-family:var(--font-body); background:var(--surface); color:var(--ink); box-sizing:border-box; }
+.catalogo-buscador input:focus { outline:none; border-color:var(--accent-blue); box-shadow:0 0 0 3.5px rgba(53,82,214,.14); }
+.catalogo-buscador::before { content:"🔎"; position:absolute; left:11px; top:50%; transform:translateY(-50%); font-size:12px; opacity:.6; }
+.pill-filtro { display:inline-flex; align-items:center; gap:5px; background:var(--bg-light); border:1.5px solid var(--line); border-radius:20px; padding:6px 13px; font-size:12.5px; font-weight:600; color:var(--text-muted); cursor:pointer; transition:all .15s var(--ease); white-space:nowrap; }
+.pill-filtro:hover { border-color:#C7CBE0; color:var(--ink); }
+.pill-filtro.activo { background:var(--ink); border-color:var(--ink); color:white; }
+
+.catalogo-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; }
+.tipo-card { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px 18px; box-shadow:var(--shadow-sm); transition:box-shadow .18s var(--ease), transform .18s var(--ease); display:flex; flex-direction:column; gap:10px; }
+.tipo-card:hover { box-shadow:var(--shadow-md); transform:translateY(-2px); }
+.tipo-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+.tipo-card-icono { width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; background:rgba(53,82,214,.1); }
+.tipo-card-nombre { font-family:var(--font-display); font-weight:700; font-size:13.5px; line-height:1.3; }
+.tipo-card-doc { font-size:11px; color:var(--text-muted); font-weight:500; }
+.tipo-card-empresas { display:flex; gap:5px; flex-wrap:wrap; }
+.chip-empresa { font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:20px; color:white; letter-spacing:.2px; }
+.tipo-card-detalle { font-size:12px; color:var(--text-muted); line-height:1.5; }
+.tipo-card-footer { display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:auto; padding-top:10px; border-top:1px solid var(--line); }
+.catalogo-vacio { text-align:center; padding:40px 20px; color:var(--text-muted); font-size:13px; }
+
 .insp-login-wrap { position:fixed; inset:0; background:radial-gradient(circle at 20% 20%, var(--sidebar-bg-2) 0%, var(--sidebar-bg) 55%, #0B1226 100%); display:flex; align-items:center; justify-content:center; z-index:100; padding:20px; }
 .insp-login-card { background:white; border-radius:18px; padding:32px 30px; width:100%; max-width:360px; box-shadow:0 30px 70px rgba(0,0,0,.4); border-top:4px solid var(--accent-blue); animation:fadeIn .35s var(--ease); }
 .insp-login-card h2 { margin:0 0 4px 0; font-size:19px; }
@@ -1242,8 +1286,18 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
         <h2 class="panel-title">⚙️ Tipos de Inspección</h2>
         <p class="panel-desc">Aquí defines el catálogo de inspecciones (hasta tus 24) y a qué empresa(s) aplica cada una. Una vez creada, aparece disponible en "Empezar".</p>
 
-        <div class="insp-card">
-            <h3 style="margin-top:0; font-size:14px;">Agregar nueva inspección</h3>
+        <div id="catalogoStats" class="catalogo-stats"></div>
+
+        <div class="insp-card acordeon-card" id="cardConstructorTipo">
+            <div class="acordeon-header" onclick="toggleConstructorTipo()">
+                <div>
+                    <h3>➕ Agregar nueva inspección</h3>
+                    <div class="acordeon-sub">Toca aquí para abrir el constructor de checklist o muestreo</div>
+                </div>
+                <span class="acordeon-chevron">▾</span>
+            </div>
+            <div class="acordeon-body" id="cuerpoConstructorTipo">
+            <div class="acordeon-body-inner">
             <div class="form-grid">
                 <div style="grid-column:1/-1;">
                     <label>Nombre de la inspección</label>
@@ -1343,11 +1397,17 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
                 <button class="btn-secundario" id="btnGuardarTipo" onclick="agregarTipoInspeccion()">➕ Agregar al catálogo</button>
                 <button class="btn-chico" onclick="cancelarEdicionTipo()">Cancelar</button>
             </div>
+            </div>
+            </div>
         </div>
 
         <div class="insp-card">
             <h3 style="margin-top:0; font-size:14px;">Catálogo actual</h3>
-            <div id="listaTiposCatalogo"></div>
+            <div class="catalogo-toolbar">
+                <div class="catalogo-buscador"><input id="fCatalogoBuscar" placeholder="Buscar por nombre o documento..." oninput="renderCatalogoTipos()"></div>
+                <div id="catalogoFiltrosEmpresa" style="display:flex; gap:6px; flex-wrap:wrap;"></div>
+            </div>
+            <div id="listaTiposCatalogo" class="catalogo-grid"></div>
         </div>
 
         <div class="insp-card" id="cardTiposOcultos" style="display:none;">
@@ -4264,24 +4324,34 @@ function entrarAlApp() {
     `;
     document.getElementById("tabBtnTipos").style.display = sesionActual.rol === "superadmin" ? "inline-block" : "none";
     document.getElementById("tabBtnInicio").style.display = esAuditor() ? "none" : "inline-block";
-    requestAnimationFrame(() => {
-        mostrarTab(esAuditor() ? "historial" : "inicio");
-    });
+    mostrarTab(esAuditor() ? "historial" : "inicio");
 }
 
+// Guard para evitar que dos llamadas concurrentes a intentarSesionGuardada() (una al
+// cargar la página y otra al entrar por primera vez a la sección "Inspecciones") corran
+// en paralelo y se pisen entre sí, dejando el panel "Empezar" a medio cargar hasta que
+// el usuario cambia de pestaña. Mientras una llamada está en curso, las demás se ignoran;
+// si ya hay sesión resuelta (sesionActual ya existe), tampoco vuelve a ejecutarse.
+let intentandoSesionGuardada = false;
 async function intentarSesionGuardada() {
-    let selUsuario = document.getElementById("loginUsuario");
-    selUsuario.innerHTML = `<option value="">Selecciona tu usuario...</option>` + USUARIOS.map(u => `<option value="${u.usuario}">${u.nombre}</option>`).join("");
+    if (intentandoSesionGuardada || sesionActual) return;
+    intentandoSesionGuardada = true;
+    try {
+        let selUsuario = document.getElementById("loginUsuario");
+        selUsuario.innerHTML = `<option value="">Selecciona tu usuario...</option>` + USUARIOS.map(u => `<option value="${u.usuario}">${u.nombre}</option>`).join("");
 
-    let { data } = await sb.auth.getSession();
-    if (data.session) {
-        let user = data.session.user;
-        let meta = user.user_metadata || {};
-        let uId = (user.email || "").split("@")[0];
-        let uConocido = USUARIOS.find(x => x.usuario === uId);
-        sesionActual = { usuario: uId, nombre: meta.nombre || (uConocido ? uConocido.nombre : uId), rol: meta.rol || "usuario", authId: user.id };
-        await cargarDatosInspeccionesDesdeSupabase();
-        entrarAlApp();
+        let { data } = await sb.auth.getSession();
+        if (data.session) {
+            let user = data.session.user;
+            let meta = user.user_metadata || {};
+            let uId = (user.email || "").split("@")[0];
+            let uConocido = USUARIOS.find(x => x.usuario === uId);
+            sesionActual = { usuario: uId, nombre: meta.nombre || (uConocido ? uConocido.nombre : uId), rol: meta.rol || "usuario", authId: user.id };
+            await cargarDatosInspeccionesDesdeSupabase();
+            entrarAlApp();
+        }
+    } finally {
+        intentandoSesionGuardada = false;
     }
 }
 
@@ -4304,6 +4374,7 @@ let inspecciones = [];
 let tiposCustom = [];
 let overridesTipos = {}; // ediciones del Super Admin a los tipos integrados (preguntas, puntuación, etc.)
 let tiposIntegradosOcultos = []; // ids de tipos incluidos que el Super Admin "borró" del catálogo activo
+let catalogoFiltroEmpresa = "todas"; // filtro de empresa activo en "Tipos de Inspección"
 let perfiles = {}; // { usuario: { foto, tema } } — cargado desde la tabla "perfiles"
 let bitacora = [];
 let inspeccionActual = null;
@@ -4550,35 +4621,90 @@ function renderListaColumnasEvaluacionTemp() {
     `).join("");
 }
 
+function colorEmpresa(nombre) {
+    if (nombre === "Notions Dominicana") return "var(--empresa-notions)";
+    if (nombre === "Global Technology Group") return "var(--empresa-gtg)";
+    if (nombre === "Now Logistics") return "var(--empresa-now)";
+    return "var(--text-muted)";
+}
+
+function toggleConstructorTipo(forzarAbrir) {
+    let card = document.getElementById("cardConstructorTipo");
+    let abrir = forzarAbrir === true ? true : (forzarAbrir === false ? false : !card.classList.contains("abierto"));
+    card.classList.toggle("abierto", abrir);
+}
+
+function filtrarCatalogoPorEmpresa(empresa) {
+    catalogoFiltroEmpresa = empresa;
+    renderCatalogoTipos();
+}
+
 function renderCatalogoTipos() {
     if (!exigirSuperAdmin("Solo el Super Admin puede ver y editar el catálogo de inspecciones.")) { mostrarTab("inicio"); return; }
 
     let cont = document.getElementById("checkboxesEmpresaTipo");
     cont.innerHTML = EMPRESAS.map(e => `<label style="font-size:13px;"><input type="checkbox" class="chk-empresa-tipo" value="${e}"> ${e}</label>`).join("");
 
-    let lista = document.getElementById("listaTiposCatalogo");
-    lista.innerHTML = tiposVisibles().map(t => {
-        let detalle = t.modo === "muestreo"
-            ? `${t.columnasEvaluacion.length} columna(s) de evaluación — filas dinámicas`
-            : `${t.checklist.length} elementos · ${t.puntosPorItem} pts c/u · ${t.etiquetaValoracionPositiva || "Ok"}/${t.etiquetaValoracionNegativa || "Corregir"}${t.tieneCondicion ? ` · con Condición (${t.etiquetaCondicionPositiva}/${t.etiquetaCondicionNegativa})` : ""}`;
-        let tieneOverride = t.integrado && !!overridesTipos[t.id];
-        return `
-        <div class="item-row" style="grid-template-columns:1fr auto;">
-            <div>
-                <div class="item-nombre">${t.nombre}${t.documento ? ` <span style="color:var(--text-muted); font-weight:400;">(${t.documento})</span>` : ""}${t.modo === "muestreo" ? ` <span style="color:var(--accent-blue); font-weight:700; font-size:11px;">· MUESTREO</span>` : ""}</div>
-                <div style="font-size:12.5px; color:var(--text-muted);">${t.empresas.join(", ")} · ${detalle}</div>
-            </div>
-            <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
-                ${t.integrado ? `<span class="badge-nivel ${tieneOverride ? "badge-medio" : "badge-adecuado"}">${tieneOverride ? "Personalizada" : "Incluida"}</span>` : ""}
-                <button class="btn-chico" onclick="editarTipo('${t.id}')">Editar</button>
-                ${t.integrado && tieneOverride ? `<button class="btn-chico" onclick="restablecerTipoIntegrado('${t.id}')">Restablecer original</button>` : ""}
-                ${t.integrado
-                    ? `<button class="btn-chico rojo" onclick="eliminarTipoIntegrado('${t.id}')">Borrar</button>`
-                    : `<button class="btn-chico rojo" onclick="eliminarTipoCustom('${t.id}')">Eliminar</button>`}
-            </div>
-        </div>
+    let todos = tiposVisibles();
+
+    // ---- Stats rápidas ----
+    let totalIncluidas = todos.filter(t => t.integrado).length;
+    let totalPersonalizadas = todos.filter(t => t.integrado && overridesTipos[t.id]).length;
+    let totalCustom = todos.filter(t => !t.integrado).length;
+    document.getElementById("catalogoStats").innerHTML = `
+        <div class="catalogo-stat"><b>${todos.length}</b><span>En catálogo</span></div>
+        <div class="catalogo-stat"><b>${totalIncluidas}</b><span>Incluidas</span></div>
+        <div class="catalogo-stat"><b>${totalCustom}</b><span>Creadas por ti</span></div>
+        <div class="catalogo-stat"><b>${totalPersonalizadas}</b><span>Personalizadas</span></div>
     `;
-    }).join("");
+
+    // ---- Filtros por empresa ----
+    let filtrosCont = document.getElementById("catalogoFiltrosEmpresa");
+    let pills = ["todas", ...EMPRESAS];
+    filtrosCont.innerHTML = pills.map(e => `<span class="pill-filtro ${catalogoFiltroEmpresa === e ? "activo" : ""}" onclick="filtrarCatalogoPorEmpresa('${e}')">${e === "todas" ? "Todas" : e}</span>`).join("");
+
+    // ---- Aplicar búsqueda + filtro de empresa ----
+    let texto = (document.getElementById("fCatalogoBuscar").value || "").trim().toLowerCase();
+    let filtrados = todos.filter(t => {
+        let coincideTexto = !texto || t.nombre.toLowerCase().includes(texto) || (t.documento || "").toLowerCase().includes(texto);
+        let coincideEmpresa = catalogoFiltroEmpresa === "todas" || t.empresas.includes(catalogoFiltroEmpresa);
+        return coincideTexto && coincideEmpresa;
+    });
+
+    let lista = document.getElementById("listaTiposCatalogo");
+    if (filtrados.length === 0) {
+        lista.innerHTML = `<div class="catalogo-vacio">Ningún tipo de inspección coincide con la búsqueda/filtro actual.</div>`;
+    } else {
+        lista.innerHTML = filtrados.map(t => {
+            let detalle = t.modo === "muestreo"
+                ? `${t.columnasEvaluacion.length} columna(s) de evaluación — filas dinámicas`
+                : `${t.checklist.length} elementos · ${t.puntosPorItem} pts c/u · ${t.etiquetaValoracionPositiva || "Ok"}/${t.etiquetaValoracionNegativa || "Corregir"}${t.tieneCondicion ? ` · con Condición (${t.etiquetaCondicionPositiva}/${t.etiquetaCondicionNegativa})` : ""}`;
+            let tieneOverride = t.integrado && !!overridesTipos[t.id];
+            return `
+            <div class="tipo-card">
+                <div class="tipo-card-top">
+                    <div style="display:flex; gap:10px; align-items:flex-start;">
+                        <div class="tipo-card-icono">${t.modo === "muestreo" ? "🔁" : "📋"}</div>
+                        <div>
+                            <div class="tipo-card-nombre">${t.nombre}</div>
+                            ${t.documento ? `<div class="tipo-card-doc">${t.documento}</div>` : ""}
+                        </div>
+                    </div>
+                    ${t.integrado ? `<span class="badge-nivel ${tieneOverride ? "badge-medio" : "badge-adecuado"}">${tieneOverride ? "Personalizada" : "Incluida"}</span>` : `<span class="badge-nivel badge-adecuado" style="background:var(--accent-blue);">Tuya</span>`}
+                </div>
+                <div class="tipo-card-empresas">${t.empresas.map(e => `<span class="chip-empresa" style="background:${colorEmpresa(e)};">${e}</span>`).join("")}</div>
+                <div class="tipo-card-detalle">${detalle}</div>
+                <div class="tipo-card-footer">
+                    <button class="btn-chico" onclick="editarTipo('${t.id}')">Editar</button>
+                    ${t.integrado && tieneOverride ? `<button class="btn-chico" onclick="restablecerTipoIntegrado('${t.id}')">Restablecer</button>` : ""}
+                    ${t.integrado
+                        ? `<button class="btn-chico rojo" onclick="eliminarTipoIntegrado('${t.id}')">Borrar</button>`
+                        : `<button class="btn-chico rojo" onclick="eliminarTipoCustom('${t.id}')">Eliminar</button>`}
+                </div>
+            </div>
+        `;
+        }).join("");
+    }
 
     let contOcultos = document.getElementById("listaTiposOcultos");
     let ocultos = TIPOS_INTEGRADOS_BASE.filter(t => tiposIntegradosOcultos.includes(t.id));
@@ -4687,6 +4813,7 @@ async function agregarTipoInspeccion() {
     }
 
     limpiarFormularioTipo();
+    toggleConstructorTipo(false);
     renderCatalogoTipos();
 }
 
@@ -4752,6 +4879,7 @@ function editarTipo(id) {
     toggleCondicionTipo();
     renderListaColumnasEvaluacionTemp();
     document.getElementById("btnGuardarTipo").innerText = "💾 Guardar cambios";
+    toggleConstructorTipo(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -4760,6 +4888,7 @@ function cancelarEdicionTipo() {
     tipoEditandoEsIntegrado = false;
     limpiarFormularioTipo();
     document.getElementById("btnGuardarTipo").innerText = "➕ Agregar al catálogo";
+    toggleConstructorTipo(false);
 }
 
 async function eliminarTipoCustom(id) {
