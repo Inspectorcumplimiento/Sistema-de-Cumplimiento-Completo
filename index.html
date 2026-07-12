@@ -960,7 +960,6 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
         </div>
 
         <a id="menu-inicio" onclick="showSection('inicio')" class="active-menu">📊 Inicio (Dashboard)</a>
-        <a id="menu-inspecciones" onclick="showSection('inspecciones')">🔍 Inspecciones</a>
         <a id="menu-actividades" onclick="showSection('actividades')">📋 Actividades</a>
         <a id="menu-reportes" onclick="showSection('reportes')">⚠️ Control de Reportes</a>
         <a id="menu-accidentabilidad" onclick="showSection('accidentabilidad')">🧯 Accidentabilidad</a>
@@ -968,6 +967,7 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
         <a id="menu-asociados" onclick="showSection('asociados')">🤝 Asociados de Negocios</a>
         <a id="menu-indicadores" onclick="showSection('indicadores')">📈 Indicadores</a>
         <a id="menu-jornadas" onclick="showSection('jornadas')">📅 Jornadas y Eventos</a>
+        <a id="menu-inspecciones" onclick="showSection('inspecciones')">🔍 Inspecciones</a>
         <a id="menu-configuracion" onclick="showSection('configuracion')">⚙️ Configuración</a>
         
         <a onclick="logout()" class="btn-logout">🚪 Cerrar Sesión</a>
@@ -3745,9 +3745,9 @@ function updateCharts() {
    Project ref: iqexkyensmkhftzpkrgk. Esta es la anon public key — está pensada para
    vivir en código de cliente (no es secreta como la service_role). La seguridad real
    la dan las políticas RLS de cada tabla en Supabase. */
-const SUPABASE_URL = "https://iqexkyensmkhftzpkrgk.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlxZXhreWVuc21raGZ0enBrcmdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDE2ODUsImV4cCI6MjA5OTI3NzY4NX0.zo7_oDAs3vKROj36BGIa_5Pux_7RLrFRbFrdELSzsAs";
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const INSP_SUPABASE_URL = "https://cjmzmxpqlvxprdqfjnpq.supabase.co";
+const INSP_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqbXpteHBxbHZ4cHJkcWZqbnBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3NzgyNzcsImV4cCI6MjA5OTM1NDI3N30.jwQZjHKTWbDyJPj6eYD4UHM2lIXFXsnLrIw9IcYpzeg";
+const sb = supabase.createClient(INSP_SUPABASE_URL, INSP_SUPABASE_ANON_KEY);
 
 /* ---- Indicador de sincronización: avisa mientras guarda, si quedó bien, o si algo falló ---- */
 let syncTimeoutId = null;
