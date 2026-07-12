@@ -2241,6 +2241,12 @@ function showSection(id){
     if(id === 'inicio') rotarSabiasQue();
     if(id === 'indicadores' || id === 'inicio' || id === 'accidentabilidad') updateCharts();
     if(id === 'accidentabilidad' || id === 'inicio') verificarCambioDeAnioAccidentabilidad();
+    if(id === 'inspecciones' && typeof sesionActual !== 'undefined' && !sesionActual && typeof intentarSesionGuardada === 'function') {
+        // Inspecciones solo revisa la sesion una vez, al cargar la pagina (que puede
+        // ser ANTES de que hayas iniciado sesion en la macro). Si todavia no tiene
+        // sesion propia, la volvemos a revisar justo ahora, sin esperar a un reload.
+        intentarSesionGuardada();
+    }
 }
 
 function limpiarFiltroFecha() {
