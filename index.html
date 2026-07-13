@@ -6,6 +6,9 @@
 <title>Control de Cumplimiento </title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
@@ -4507,7 +4510,7 @@ function renderInicio() {
     let resumen = document.getElementById("resumenTiposPorEmpresa");
     resumen.innerHTML = EMPRESAS.map(emp => {
         let tipos = tiposVisibles().filter(t => t.empresas.includes(emp));
-        return `<div class="card"><h3 style="margin-top:0; font-size:14px;">${emp}</h3>
+        return `<div class="insp-card"><h3 style="margin-top:0; font-size:14px;">${emp}</h3>
             ${tipos.length === 0
                 ? `<p style="font-size:13px; color:var(--text-muted);">Todavía no hay inspecciones cargadas para esta empresa. Agrégalas en "⚙️ Tipos de Inspección".</p>`
                 : `<ul style="font-size:13px; line-height:1.8; margin:0; padding-left:18px;">${tipos.map(t => `<li>${t.nombre} <span style="color:var(--text-muted);">(${t.modo === "muestreo" ? "muestreo por filas" : t.checklist.length + " elementos"})</span></li>`).join("")}</ul>`}
@@ -5755,7 +5758,7 @@ function verDetalleInspeccion(id) {
            </tbody></table>`;
 
     let galeriaFotos = (r.fotos && r.fotos.length > 0) ? `
-        <div class="card">
+        <div class="insp-card">
             <h3 style="margin-top:0; font-size:14px;">📷 Evidencia fotográfica (${r.fotos.length})</h3>
             <div style="display:flex; flex-wrap:wrap; gap:10px;">
                 ${r.fotos.map(f => `
@@ -5768,7 +5771,7 @@ function verDetalleInspeccion(id) {
         </div>` : "";
 
     document.getElementById("detalleContenido").innerHTML = `
-        <div class="card">
+        <div class="insp-card">
             <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:16px; align-items:center; margin-bottom:16px;">
                 <div>
                     <h2 style="margin:0 0 4px 0; font-size:19px;">${tipo.nombre}</h2>
@@ -5783,14 +5786,14 @@ function verDetalleInspeccion(id) {
             </div>
         </div>
 
-        <div class="card">
+        <div class="insp-card">
             <h3 style="margin-top:0; font-size:14px;">${tipo.modo === "muestreo" ? "Hallazgos encontrados en la muestra" : "Elementos marcados para corregir"}</h3>
             ${filasCorregir}
         </div>
 
         ${galeriaFotos}
 
-        ${insp.observaciones ? `<div class="card"><h3 style="margin-top:0; font-size:14px;">Observaciones generales</h3><p style="font-size:13.5px; white-space:pre-wrap;">${insp.observaciones}</p></div>` : ""}
+        ${insp.observaciones ? `<div class="insp-card"><h3 style="margin-top:0; font-size:14px;">Observaciones generales</h3><p style="font-size:13.5px; white-space:pre-wrap;">${insp.observaciones}</p></div>` : ""}
     `;
 
     document.getElementById("tabBtnDetalle").style.display = "inline-block";
@@ -5828,7 +5831,7 @@ function renderAlertas() {
     if (alertas.length === 0) { cont.style.display = "none"; cont.innerHTML = ""; return; }
     cont.style.display = "block";
     cont.innerHTML = `
-        <div class="card" style="border:1.5px solid var(--sec-red); background:linear-gradient(180deg, rgba(214,72,63,.06), var(--surface) 60%);">
+        <div class="insp-card" style="border:1.5px solid var(--sec-red); background:linear-gradient(180deg, rgba(214,72,63,.06), var(--surface) 60%);">
             <h3 style="margin-top:0; font-size:14px; color:var(--sec-red);">🚨 Alertas — naves/ubicaciones que necesitan atención</h3>
             <div style="display:flex; flex-direction:column; gap:8px;">
                 ${alertas.map(a => `
