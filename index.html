@@ -814,7 +814,6 @@ body.tema-oscuro ::-webkit-scrollbar-thumb { border-color: var(--bg-light); }
 h1,h2,h3,h4 { font-family: var(--font-display); letter-spacing:-0.01em; }
 
 .topbar { background: linear-gradient(155deg, var(--sidebar-bg) 0%, var(--sidebar-bg-2) 100%); color:white; padding:16px 28px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; border-bottom:3px solid; border-image: linear-gradient(90deg, var(--accent-blue), var(--accent-blue-light), var(--sec-red)) 1; box-shadow:0 4px 20px -8px rgba(10,14,30,.4); }
-.topbar-left { display:flex; align-items:center; gap:14px; }
 .topbar-logo { width:40px; height:40px; border-radius:11px; background: linear-gradient(135deg, var(--accent-blue), var(--sec-red)); display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-weight:700; font-size:17px; box-shadow:0 4px 14px -4px rgba(53,82,214,.6), inset 0 1px 0 rgba(255,255,255,.2); }
 .topbar h1 { font-size:17px; margin:0; font-weight:600; }
 .topbar .subtitle { font-size:12px; color:#9AA1B4; margin-top:3px; }
@@ -896,7 +895,6 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
 .insp-chart-box { background:var(--surface); border-radius:16px; padding:20px; box-shadow:var(--shadow-md); border:1px solid var(--line); margin-bottom:18px; }
 .insp-chart-box h3 { margin:0 0 14px 0; font-size:13.5px; }
 
-.aviso-demo { background:#FBEEE2; border:1px solid #E8C4A0; border-left:4px solid var(--sec-red); border-radius:12px; padding:12px 16px; font-size:12.5px; color:#6B3A14; margin-bottom:20px; }
 
 .filtro-bar { display:flex; align-items:center; gap:10px; margin-bottom:18px; flex-wrap:wrap; }
 .filtro-bar label { font-size:12px; font-weight:600; color:var(--text-muted); }
@@ -4460,11 +4458,6 @@ async function registrarBitacora(accion, detalle) {
     if (error) { console.error("No se pudo registrar en la bitácora de Supabase:", error.message); mostrarEstadoSync("La bitácora no se pudo guardar en la nube", "error"); }
     let panel = document.getElementById("panelBitacora");
     if (panel && panel.classList.contains("active")) renderBitacora();
-}
-
-/* ---- Identidad de quien usa la app ahora mismo (para poder trazar quién hizo qué) ---- */
-function obtenerUsuarioActual() {
-    return sesionActual ? sesionActual.nombre : "Sin identificar";
 }
 
 /* ---- Bitácora: se registra cada creación, edición o eliminación, con quién y cuándo ---- */
