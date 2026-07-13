@@ -5751,6 +5751,7 @@ function verDetalleInspeccion(id) {
     let insp = inspecciones.find(i => i.id === id);
     if (!insp) return;
     let tipo = tipoPorId(insp.tipoId);
+    if (!tipo) { alert("El tipo de inspección de este registro ya no existe en el catálogo, por lo que no se puede mostrar el detalle."); return; }
     let r = insp.resumen;
 
     let filasCorregir = r.itemsCorregir.length === 0
