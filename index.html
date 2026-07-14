@@ -2270,10 +2270,20 @@ function verificarSesion() {
     if (usuarioActivo) {
         document.getElementById("login-screen").style.display = "none";
         document.getElementById("app-content").style.display = "block";
-        
+
         document.getElementById("user-display-name").innerText = usuarioActivo.nombre;
         document.getElementById("user-display-role").innerText = usuarioActivo.posicion ? usuarioActivo.posicion : `Rol: ${usuarioActivo.rol.toUpperCase()}`;
-        
+
+        // Rol "solo campo": únicamente ve Inspecciones, nada más del dashboard.
+        let soloInspecciones = usuarioActivo.rol === "colaborador_campo";
+        ["menu-inicio","menu-actividades","menu-reportes","menu-accidentabilidad","menu-inducciones","menu-asociados","menu-indicadores","menu-jornadas","menu-configuracion"]
+            .forEach(id => { let el = document.getElementById(id); if (el) el.style.display = soloInspecciones ? "none" : ""; });
+        if (soloInspecciones) {
+            cargarPreferenciasUsuarioActivo();
+            showSection("inspecciones");
+            return;
+        }
+
         cargarPreferenciasUsuarioActivo();
         configurarSelectoresPorRol();
         rotarSabiasQue();
@@ -4309,6 +4319,14 @@ function entrarAlApp() {
     let miPerfil = perfiles[sesionActual.usuario] || {};
     document.body.classList.toggle("tema-oscuro", miPerfil.tema === "oscuro");
     document.getElementById("tabBtnInicio").style.display = esAuditor() ? "none" : "inline-block";
+
+    // Rol "solo campo": únicamente Empezar + Historial (+ Detalle al pulsar Ver).
+    let soloEjecucion = typeof usuarioActivo !== "undefined" && usuarioActivo && usuarioActivo.rol === "colaborador_campo";
+    ["tabBtnDashboard","tabBtnComparativa","tabBtnTipos","tabBtnBitacora"].forEach(id => {
+        let el = document.getElementById(id);
+        if (el) el.style.display = soloEjecucion ? "none" : "";
+    });
+
     mostrarTab(esAuditor() ? "historial" : "inicio");
 }
 
@@ -4318,6 +4336,11 @@ function entrarAlApp() {
 // el usuario cambia de pestaña. Mientras una llamada está en curso, las demás se ignoran;
 // si ya hay sesión resuelta (sesionActual ya existe), tampoco vuelve a ejecutarse.
 let intentandoSesionGuardada = false;
+// Cuentas compartidas: antes de continuar, se les pide el nombre de la persona que
+// va a hacer la inspección hoy, para que quede bien identificada en el historial y
+// la bitácora (en vez de mostrar siempre "Colaborador" para todo el mundo).
+const USUARIOS_COMPARTIDOS = ["colaborador"];
+
 async function intentarSesionGuardada() {
     if (intentandoSesionGuardada || sesionActual) return;
     intentandoSesionGuardada = true;
@@ -4331,8 +4354,13 @@ async function intentarSesionGuardada() {
             // que es la misma cuenta; si no está disponible todavía, se usa el de Supabase.
             let nombreFinal = (typeof usuarioActivo !== "undefined" && usuarioActivo && usuarioActivo.nombre) || meta.nombre || uId;
             sesionActual = { usuario: uId, nombre: nombreFinal, rol: meta.rol || "usuario", authId: user.id };
-            await cargarDatosInspeccionesDesdeSupabase();
-            entrarAlApp();
+
+            if (USUARIOS_COMPARTIDOS.includes(uId)) {
+                pedirNombreUsuarioCompartido();
+            } else {
+                await cargarDatosInspeccionesDesdeSupabase();
+                entrarAlApp();
+            }
         } else {
             // No hay sesión de Supabase activa: esto no debería pasar porque para llegar
             // aquí ya tuviste que iniciar sesión en el dashboard principal. Si ocurre
@@ -4342,6 +4370,32 @@ async function intentarSesionGuardada() {
     } finally {
         intentandoSesionGuardada = false;
     }
+}
+
+function pedirNombreUsuarioCompartido() {
+    let card = document.querySelector("#pantallaLogin .insp-login-card");
+    card.innerHTML = `
+        <h2>👤 ¿Quién va a inspeccionar?</h2>
+        <p class="insp-login-sub">Esta cuenta la usan varias personas. Escribe tu nombre para identificar tus inspecciones.</p>
+        <label>Tu nombre</label>
+        <input id="fNombreUsuarioCompartido" placeholder="Ej: Pedro Pérez" onkeydown="if(event.key==='Enter') confirmarNombreUsuarioCompartido();">
+        <div id="errorNombreUsuarioCompartido" class="insp-login-error"></div>
+        <button class="btn-primario" onclick="confirmarNombreUsuarioCompartido()">Continuar</button>
+    `;
+    document.getElementById("pantallaLogin").style.display = "flex";
+}
+
+async function confirmarNombreUsuarioCompartido() {
+    let nombre = document.getElementById("fNombreUsuarioCompartido").value.trim();
+    if (!nombre) {
+        let err = document.getElementById("errorNombreUsuarioCompartido");
+        err.innerText = "Escribe tu nombre para continuar.";
+        err.style.display = "block";
+        return;
+    }
+    sesionActual.nombre = nombre;
+    await cargarDatosInspeccionesDesdeSupabase();
+    entrarAlApp();
 }
 
 function esSuperAdmin() { return !!(sesionActual && sesionActual.rol === "superadmin"); }
