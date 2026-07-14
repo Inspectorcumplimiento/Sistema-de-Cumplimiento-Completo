@@ -2062,7 +2062,11 @@ function sbAplicarFila(key, value) {
         else if (key === 'jor')                    jornadas               = JSON.parse(value);
         else if (key === 'jor_log')                 { logJornadas = JSON.parse(value); renderTrazabilidadJornadas(); }
         else if (key === 'acc_master_3_companies') { accidentabilidadMaestra = JSON.parse(value); migrarEstructuraAccidentabilidadPeriodos(); verificarCambioDeAnioAccidentabilidad(); }
-        else if (key === 'app_usuarios')         { USUARIOS_VALIDOS       = JSON.parse(value); migrarPosicionesUsuarios(); }
+        // Nota: 'app_usuarios' ya NO se sincroniza desde aquí a propósito. Los nombres/roles
+        // reales viven en Supabase Auth + tabla "perfiles"; esta lista es solo de referencia
+        // para los formularios de asignación, y debe salir siempre del código (ver más abajo),
+        // nunca de una copia guardada previamente (eso fue justo lo que causó que a Joan no
+        // le cuadraran sus registros: una copia vieja con usuarios que ya no existen).
     } catch(e) {}
 }
 
@@ -2070,10 +2074,10 @@ function sbAplicarFila(key, value) {
 // (porque se creó antes de agregar este campo), se le asigna según su cargo conocido.
 // También normaliza a MAYÚSCULAS cualquier posición ya guardada, sin tocar clave, rol ni nombre.
 const POSICIONES_POR_DEFECTO = {
-    "dcumplimiento": "ADMINISTRADOR",
-    "jgarcia": "INSPECTOR",
-    "jhilario": "COORDINADOR",
-    "vtorres": "GERENTE"
+    "superadmin": "ADMINISTRADOR",
+    "joan": "INSPECTOR",
+    "jhoan": "COORDINADOR",
+    "victor": "GERENTE"
 };
 function migrarPosicionesUsuarios() {
     if (!USUARIOS_VALIDOS) return;
@@ -2088,8 +2092,6 @@ function migrarPosicionesUsuarios() {
         }
     });
     if (huboCambios) {
-        localStorage.setItem("app_usuarios", JSON.stringify(USUARIOS_VALIDOS));
-        sbSet("app_usuarios", JSON.stringify(USUARIOS_VALIDOS));
         if (usuarioActivo) {
             // Refrescar el usuario activo en sesión con su posición recién migrada
             let actualizado = USUARIOS_VALIDOS[usuarioActivo.username];
@@ -2146,11 +2148,11 @@ function activarSincronizacionRealtime() {
 }
 
 // ==========================================
-let USUARIOS_VALIDOS = JSON.parse(localStorage.getItem("app_usuarios")) || {
-    "dcumplimiento": { clave: "admin123", rol: "admin", nombre: "Super Administrador", posicion: "ADMINISTRADOR" },
-    "jgarcia": { clave: "1234", rol: "empleado", nombre: "Joan Garcia", posicion: "INSPECTOR" },
-    "jhilario": { clave: "1234", rol: "empleado", nombre: "Jhoan Hilario", posicion: "COORDINADOR" },
-    "vtorres": { clave: "1234", rol: "supervisor", nombre: "Victor Torres", posicion: "GERENTE" }
+let USUARIOS_VALIDOS = {
+    "superadmin": { rol: "admin", nombre: "Super Administrador", posicion: "ADMINISTRADOR" },
+    "joan": { rol: "empleado", nombre: "Joan Garcia", posicion: "INSPECTOR" },
+    "jhoan": { rol: "empleado", nombre: "Jhoan Hilario", posicion: "COORDINADOR" },
+    "victor": { rol: "supervisor", nombre: "Victor Torres", posicion: "GERENTE" }
 };
 migrarPosicionesUsuarios();
 
@@ -2189,16 +2191,16 @@ let myDashNotionsGroupDiasChart = null;
 // Cada usuario "cumple" su parte en cuanto el estatus avanza MÁS ALLÁ de la etapa que le toca,
 // sin importar a quién se le haya reasignado el registro después.
 const ETAPAS_ASOCIADOS = ["En depuración", "En revisión y firma", "Listo para enviar", "Enviado"];
-const RESPONSABLE_POR_ETAPA = { 0: "jgarcia", 1: "vtorres", 2: "jhilario" };
+const RESPONSABLE_POR_ETAPA = { 0: "joan", 1: "victor", 2: "jhoan" };
 
 function calcularCumplimientoAsociados(filtro, filtroDia) {
     let conteo = 0, cumplidos = 0;
     let idxEtapaUsuario = Object.keys(RESPONSABLE_POR_ETAPA).find(k => RESPONSABLE_POR_ETAPA[k] === filtro);
 
     asociados.forEach(asoc => {
-        if (!asoc.usuario) asoc.usuario = "dcumplimiento";
+        if (!asoc.usuario) asoc.usuario = "superadmin";
         if (!asoc.horasPorUsuario) asoc.horasPorUsuario = {};
-        if (usuarioActivo.rol === "supervisor" && asoc.usuario === "dcumplimiento") return;
+        if (usuarioActivo.rol === "supervisor" && asoc.usuario === "superadmin") return;
         if (filtroDia && asoc.fecha !== filtroDia) return;
 
         if (idxEtapaUsuario !== undefined) {
@@ -2297,18 +2299,18 @@ function configurarSelectoresPorRol() {
     let asignaJor = document.getElementById("jor_asignar_a");
 
     let optionsFiltro = `<option value="todos">-- Todos los Empleados --</option>
-                         <option value="jgarcia">Joan Garcia</option>
-                         <option value="jhilario">Jhoan Hilario</option>
-                         <option value="vtorres">Victor Torres</option>`;
+                         <option value="joan">Joan Garcia</option>
+                         <option value="jhoan">Jhoan Hilario</option>
+                         <option value="victor">Victor Torres</option>`;
                          
     let optionsForm = `<option value="">-- Mismo (Asignación propia) --</option>
-                       <option value="jgarcia">Joan Garcia</option>
-                       <option value="jhilario">Jhoan Hilario</option>
-                       <option value="vtorres">Victor Torres</option>`;
+                       <option value="joan">Joan Garcia</option>
+                       <option value="jhoan">Jhoan Hilario</option>
+                       <option value="victor">Victor Torres</option>`;
 
     if (usuarioActivo.rol === "admin") {
-        optionsFiltro += `<option value="dcumplimiento">Super Administrador</option>`;
-        optionsForm += `<option value="dcumplimiento">Super Administrador</option>`;
+        optionsFiltro += `<option value="superadmin">Super Administrador</option>`;
+        optionsForm += `<option value="superadmin">Super Administrador</option>`;
     }
 
     filtroSelect.innerHTML = optionsFiltro;
@@ -3000,8 +3002,8 @@ function renderInducciones() {
     let filtroDia = document.getElementById("filtroCalendarioDia") ? document.getElementById("filtroCalendarioDia").value : "";
 
     inducciones.forEach((ind, i) => {
-        if (!ind.usuario) ind.usuario = "dcumplimiento";
-        if (usuarioActivo && usuarioActivo.rol === "supervisor" && ind.usuario === "dcumplimiento") return;
+        if (!ind.usuario) ind.usuario = "superadmin";
+        if (usuarioActivo && usuarioActivo.rol === "supervisor" && ind.usuario === "superadmin") return;
         if (filtro !== "todos" && ind.usuario !== filtro) return;
 
         // Filtrar por fecha si hay filtro activo
@@ -3339,8 +3341,8 @@ function render(){
     }
 
     actividades.forEach((a, i) => {
-        if (!a.usuario) a.usuario = "dcumplimiento";
-        if (usuarioActivo.rol === "supervisor" && a.usuario === "dcumplimiento") return;
+        if (!a.usuario) a.usuario = "superadmin";
+        if (usuarioActivo.rol === "supervisor" && a.usuario === "superadmin") return;
 
         // Reglas de visualización por filtro global del Dashboard
         let pasaFiltroUsuario = (filtro === "todos" || a.usuario === filtro);
@@ -3403,9 +3405,9 @@ function render(){
     let horasDiaAsociados = 0;
     let conteoAsociadosDia = 0;
     asociados.forEach(asoc => {
-        if (!asoc.usuario) asoc.usuario = "dcumplimiento";
+        if (!asoc.usuario) asoc.usuario = "superadmin";
         if (!asoc.horasPorUsuario) asoc.horasPorUsuario = {};
-        if (usuarioActivo.rol === "supervisor" && asoc.usuario === "dcumplimiento") return;
+        if (usuarioActivo.rol === "supervisor" && asoc.usuario === "superadmin") return;
 
         // IMPORTANTE: no filtrar por "responsable actual", porque al reasignar el registro
         // a otra persona, el responsable anterior ya NO es asoc.usuario, pero sus horas
@@ -3428,8 +3430,8 @@ function render(){
     let induccionesVigentesDia = 0;
     let hoyStrInd = obtenerFechaHoyLocal();
     inducciones.forEach(ind => {
-        if (!ind.usuario) ind.usuario = "dcumplimiento";
-        if (usuarioActivo.rol === "supervisor" && ind.usuario === "dcumplimiento") return;
+        if (!ind.usuario) ind.usuario = "superadmin";
+        if (usuarioActivo.rol === "supervisor" && ind.usuario === "superadmin") return;
         if (filtro !== "todos" && ind.usuario !== filtro) return;
 
         if (!filtroDia || ind.fechaRegistro === filtroDia) {
@@ -3450,7 +3452,7 @@ function render(){
     let granTotalCargaObjetos = conteoActividadesDia + conteoAsociadosDia + conteoInduccionesDia;
 
     let reportesAbiertosConteo = reportes.filter(r => {
-        if (usuarioActivo.rol === "supervisor" && r.usuario === "dcumplimiento") return false;
+        if (usuarioActivo.rol === "supervisor" && r.usuario === "superadmin") return false;
         if (filtro !== "todos" && r.usuario !== filtro) return false;
         return r.estado === "Abierto" || r.estado === "En proceso";
     }).length;
@@ -3596,8 +3598,8 @@ function renderRep(){
     let filtro = getFiltroUsuario();
 
     reportes.forEach((r, i) => {
-        if (!r.usuario) r.usuario = "dcumplimiento";
-        if (usuarioActivo.rol === "supervisor" && r.usuario === "dcumplimiento") return;
+        if (!r.usuario) r.usuario = "superadmin";
+        if (usuarioActivo.rol === "supervisor" && r.usuario === "superadmin") return;
         if (filtro !== "todos" && r.usuario !== filtro) return;
 
         let claseRep = r.estado === "Abierto" ? "badge-rojo" : r.estado === "En proceso" ? "badge-amarillo" : "badge-verde";
@@ -3640,13 +3642,13 @@ function renderAsociados() {
     let filtro = getFiltroUsuario();
 
     asociados.forEach((asoc, i) => {
-        if (!asoc.usuario) asoc.usuario = "dcumplimiento";
+        if (!asoc.usuario) asoc.usuario = "superadmin";
         if (!asoc.horasPorUsuario) asoc.horasPorUsuario = {};
         // Migración: si no existe el desglose, asignar las horas al dueño actual
         if (Object.keys(asoc.horasPorUsuario).length === 0 && asoc.horas) {
             asoc.horasPorUsuario[asoc.usuario] = asoc.horas;
         }
-        if (usuarioActivo.rol === "supervisor" && asoc.usuario === "dcumplimiento") return; 
+        if (usuarioActivo.rol === "supervisor" && asoc.usuario === "superadmin") return; 
         
         let belongsToFilter = (filtro === "todos" || asoc.usuario === filtro);
         let claseEst = asoc.estatus === "En depuración" ? "badge-rojo" : asoc.estatus === "En revisión y firma" ? "badge-amarillo" : asoc.estatus === "Listo para enviar" ? "badge-azul" : "badge-verde";
@@ -3666,10 +3668,10 @@ function renderAsociados() {
             <tr>
                 <td>
                     <select class="select-responsable-tabla" onchange="reasignarAsociado(${i}, this.value)" ${deshabilitarCampos}>
-                        <option value="jgarcia" ${asoc.usuario === "jgarcia" ? "selected" : ""}>👤 Joan Garcia</option>
-                        <option value="jhilario" ${asoc.usuario === "jhilario" ? "selected" : ""}>👤 Jhoan Hilario</option>
-                        <option value="vtorres" ${asoc.usuario === "vtorres" ? "selected" : ""}>👤 Victor Torres</option>
-                        ${usuarioActivo.rol === 'admin' ? `<option value="dcumplimiento" ${asoc.usuario === "dcumplimiento" ? "selected" : ""}>Super Admin</option>` : ''}
+                        <option value="joan" ${asoc.usuario === "joan" ? "selected" : ""}>👤 Joan Garcia</option>
+                        <option value="jhoan" ${asoc.usuario === "jhoan" ? "selected" : ""}>👤 Jhoan Hilario</option>
+                        <option value="victor" ${asoc.usuario === "victor" ? "selected" : ""}>👤 Victor Torres</option>
+                        ${usuarioActivo.rol === 'admin' ? `<option value="superadmin" ${asoc.usuario === "superadmin" ? "selected" : ""}>Super Admin</option>` : ''}
                     </select>
                 </td>
                 <td><strong>${asoc.nombre}</strong></td>
@@ -3806,7 +3808,7 @@ function exportarActividadesExcel() {
     let csv = "Responsable,Titulo de Actividad,Categoria,Fecha,Horas Invertidas,Estado\n";
     
     actividades.forEach(a => {
-        if (usuarioActivo.rol === "supervisor" && a.usuario === "dcumplimiento") return;
+        if (usuarioActivo.rol === "supervisor" && a.usuario === "superadmin") return;
         if (filtro !== "todos" && a.usuario !== filtro) return;
         if (filtroDia && a.fecha !== filtroDia) return;
         
@@ -3821,7 +3823,7 @@ function exportarReportesExcel() {
     let csv = "Encargado HSE,Anomalia,Reportado Por,Area,Criticidad,Estatus\n";
     
     reportes.forEach(r => {
-        if (usuarioActivo.rol === "supervisor" && r.usuario === "dcumplimiento") return;
+        if (usuarioActivo.rol === "supervisor" && r.usuario === "superadmin") return;
         if (filtro !== "todos" && r.usuario !== filtro) return;
         
         let nombre = USUARIOS_VALIDOS[r.usuario]?.nombre || "Desconocido";
@@ -3835,7 +3837,7 @@ function exportarAsociadosExcel() {
     let csv = "Responsable,Asociado o Proveedor,Fecha Registro,Horas de Gestion,Estatus Actual\n";
     
     asociados.forEach(asoc => {
-        if (usuarioActivo.rol === "supervisor" && asoc.usuario === "dcumplimiento") return;
+        if (usuarioActivo.rol === "supervisor" && asoc.usuario === "superadmin") return;
         if (filtro !== "todos" && asoc.usuario !== filtro) return;
         
         let nombre = USUARIOS_VALIDOS[asoc.usuario]?.nombre || "Desconocido";
@@ -3851,7 +3853,7 @@ function updateCharts() {
     let filtroDia = document.getElementById("filtroCalendarioDia") ? document.getElementById("filtroCalendarioDia").value : "";
 
     let listaFiltrada = actividades.filter(a => {
-        if(usuarioActivo.rol === "supervisor" && a.usuario === "dcumplimiento") return false;
+        if(usuarioActivo.rol === "supervisor" && a.usuario === "superadmin") return false;
         if(filtroDia && a.fecha !== filtroDia) return false;
         return filtro === "todos" || a.usuario === filtro;
     });
@@ -3883,8 +3885,8 @@ function updateCharts() {
     // CUMPLIMIENTO GENERAL: combina Actividades Completadas + Inducciones Vigentes + Asociados Enviados
     let hoyStrGen = obtenerFechaHoyLocal();
     let induccionesFiltradas = inducciones.filter(ind => {
-        if (!ind.usuario) ind.usuario = "dcumplimiento";
-        if (usuarioActivo.rol === "supervisor" && ind.usuario === "dcumplimiento") return false;
+        if (!ind.usuario) ind.usuario = "superadmin";
+        if (usuarioActivo.rol === "supervisor" && ind.usuario === "superadmin") return false;
         if (filtroDia && ind.fechaRegistro !== filtroDia) return false;
         return filtro === "todos" || ind.usuario === filtro;
     });
