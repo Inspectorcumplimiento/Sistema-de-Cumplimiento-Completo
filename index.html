@@ -4361,6 +4361,28 @@ function exigirNoAuditor(mensaje) {
     return true;
 }
 
+// Editar/eliminar una inspección: solo quien la creó, o el Super Admin. Todos los demás
+// (incluido un usuario normal que no la creó) solo pueden verla.
+function puedeGestionarInspeccion(insp) {
+    if (!sesionActual) return false;
+    if (esSuperAdmin()) return true;
+    return !!(insp && insp.creadoPor === sesionActual.nombre);
+}
+function exigirGestionInspeccion(insp, mensaje) {
+    if (puedeGestionarInspeccion(insp)) return true;
+    alert(mensaje || "Solo quien creó esta inspección, o el Super Admin, puede editarla o eliminarla.");
+    return false;
+}
+
+// Gestionar el catálogo de Tipos de Inspección (crear/editar/borrar/restablecer):
+// Super Admin y Joan Garcia, por ahora, en caso de que el catálogo necesite ajustes.
+function puedeGestionarTipos() { return !!(sesionActual && (sesionActual.rol === "superadmin" || sesionActual.usuario === "joan")); }
+function exigirGestionTipos(mensaje) {
+    if (puedeGestionarTipos()) return true;
+    alert(mensaje || "Solo el Super Admin o Joan Garcia pueden editar el catálogo de tipos de inspección.");
+    return false;
+}
+
 /* ==================== ESTADO ==================== */
 // Ya no se inicializa desde localStorage: se llena de forma asíncrona con
 // cargarDatosInspeccionesDesdeSupabase() apenas el login es exitoso.
@@ -4630,7 +4652,7 @@ function filtrarCatalogoPorEmpresa(empresa) {
 }
 
 function renderCatalogoTipos() {
-    let puedeEditar = esSuperAdmin();
+    let puedeEditar = puedeGestionarTipos();
     let cardConstructor = document.getElementById("cardConstructorTipo");
     if (cardConstructor) cardConstructor.style.display = puedeEditar ? "block" : "none";
 
@@ -4720,7 +4742,7 @@ function renderCatalogoTipos() {
 }
 
 async function agregarTipoInspeccion() {
-    if (!exigirSuperAdmin("Solo el Super Admin puede crear o editar tipos de inspección.")) return;
+    if (!exigirGestionTipos("Solo el Super Admin o Joan Garcia pueden crear o editar tipos de inspección.")) return;
 
     let nombre = document.getElementById("fTipoNombre").value.trim();
     let documento = document.getElementById("fTipoDocumento").value.trim();
@@ -4833,7 +4855,7 @@ function limpiarFormularioTipo() {
 }
 
 function editarTipo(id) {
-    if (!exigirSuperAdmin("Solo el Super Admin puede editar tipos de inspección.")) return;
+    if (!exigirGestionTipos("Solo el Super Admin o Joan Garcia pueden editar tipos de inspección.")) return;
     let tipo = tipoPorId(id);
     if (!tipo) return;
     tipoCustomEditandoId = id;
@@ -4884,7 +4906,7 @@ function cancelarEdicionTipo() {
 }
 
 async function eliminarTipoCustom(id) {
-    if (!exigirSuperAdmin("Solo el Super Admin puede eliminar tipos de inspección.")) return;
+    if (!exigirGestionTipos("Solo el Super Admin o Joan Garcia pueden eliminar tipos de inspección.")) return;
     let tipo = tiposCustom.find(t => t.id === id);
     if (!tipo) return;
     if (!confirm("¿Eliminar este tipo de inspección del catálogo? Las inspecciones ya guardadas con este tipo no se borran.")) return;
@@ -4898,7 +4920,7 @@ async function eliminarTipoCustom(id) {
 }
 
 async function restablecerTipoIntegrado(id) {
-    if (!exigirSuperAdmin("Solo el Super Admin puede restablecer un tipo de inspección.")) return;
+    if (!exigirGestionTipos("Solo el Super Admin o Joan Garcia pueden restablecer un tipo de inspección.")) return;
     if (!overridesTipos[id]) return;
     if (!confirm("¿Restablecer este formulario a sus preguntas y puntuación originales? Se perderá la personalización.")) return;
     let nombre = tipoPorId(id).nombre;
@@ -4912,7 +4934,7 @@ async function restablecerTipoIntegrado(id) {
 }
 
 async function eliminarTipoIntegrado(id) {
-    if (!exigirSuperAdmin("Solo el Super Admin puede eliminar tipos de inspección.")) return;
+    if (!exigirGestionTipos("Solo el Super Admin o Joan Garcia pueden eliminar tipos de inspección.")) return;
     let tipo = tipoPorId(id);
     if (!tipo) return;
     if (!confirm(`¿Quitar "${tipo.nombre}" del catálogo activo? Las inspecciones ya guardadas con este tipo NO se borran y siguen viéndose en el historial. Puedes restaurarlo cuando quieras desde "Tipos ocultos".`)) return;
@@ -4926,7 +4948,7 @@ async function eliminarTipoIntegrado(id) {
 }
 
 async function restaurarTipoIntegrado(id) {
-    if (!exigirSuperAdmin("Solo el Super Admin puede restaurar tipos de inspección.")) return;
+    if (!exigirGestionTipos("Solo el Super Admin o Joan Garcia pueden restaurar tipos de inspección.")) return;
     let tipo = TIPOS_INTEGRADOS_BASE.find(t => t.id === id);
     mostrarEstadoSync("Guardando en la nube...", "cargando");
     let { error } = await sb.from("tipos_ocultos").delete().eq("tipo_id", id);
@@ -5339,9 +5361,9 @@ async function guardarInspeccion() {
 }
 
 function editarInspeccion(id) {
-    if (!exigirNoAuditor("Tu usuario (Auditor/a) es de solo lectura y no puede editar inspecciones.")) return;
     let insp = inspecciones.find(i => i.id === id);
     if (!insp) return;
+    if (!exigirGestionInspeccion(insp)) return;
     let tipo = tipoPorId(insp.tipoId);
     if (!tipo) { alert("El tipo de inspección de este registro ya no existe en el catálogo."); return; }
 
@@ -5426,8 +5448,8 @@ function renderHistorial() {
             <td><span class="badge-nivel ${claseNivel(insp.resumen.nivel)}">${insp.resumen.nivel}</span></td>
             <td>
                 <button class="btn-chico" onclick="verDetalleInspeccion('${insp.id}')">Ver</button>
-                ${esAuditor() ? "" : `<button class="btn-chico" onclick="editarInspeccion('${insp.id}')">Editar</button>
-                <button class="btn-chico rojo" onclick="eliminarInspeccion('${insp.id}')">Eliminar</button>`}
+                ${puedeGestionarInspeccion(insp) ? `<button class="btn-chico" onclick="editarInspeccion('${insp.id}')">Editar</button>
+                <button class="btn-chico rojo" onclick="eliminarInspeccion('${insp.id}')">Eliminar</button>` : ""}
             </td>
         </tr>
     `;
@@ -5618,9 +5640,9 @@ function generarReporteEjecutivo() {
 }
 
 async function eliminarInspeccion(id) {
-    if (!exigirNoAuditor("Tu usuario (Auditor/a) es de solo lectura y no puede eliminar inspecciones.")) return;
     let insp = inspecciones.find(i => i.id === id);
     if (!insp) return;
+    if (!exigirGestionInspeccion(insp)) return;
     if (!confirm("¿Eliminar esta inspección? No se puede deshacer.")) return;
     let tipo = tipoPorId(insp.tipoId);
     mostrarEstadoSync("Eliminando de la nube...", "cargando");
