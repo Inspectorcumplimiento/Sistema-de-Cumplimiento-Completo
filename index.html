@@ -1155,6 +1155,13 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
         <div id="inspecciones" class="section">
     <div id="inspeccionesRaiz" style="position:relative; min-height:400px;">
 <div id="syncStatus" class="sync-status"></div>
+<div id="pantallaLogin" class="insp-login-wrap" style="display:none;">
+    <div class="insp-login-card" style="text-align:center;">
+        <h2>🔄 Cargando tu sesión...</h2>
+        <p class="insp-login-sub">Estamos tomando tu usuario del panel principal.</p>
+    </div>
+</div>
+
 <div id="appContenido" style="display:none;">
 <div id="topbarSesion" style="display:flex; align-items:center; justify-content:flex-end; gap:10px; padding:8px 4px;"></div>
 <div class="tabs-bar">
@@ -1163,9 +1170,9 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
     <button class="tab-btn" id="tabBtnHistorial" onclick="mostrarTab('historial')">🗂️ Historial</button>
     <button class="tab-btn" id="tabBtnDashboard" onclick="mostrarTab('dashboard')">📊 Dashboard</button>
     <button class="tab-btn" id="tabBtnComparativa" onclick="mostrarTab('comparativa')">📅 Comparativa</button>
-    <button class="tab-btn" id="tabBtnTipos" onclick="mostrarTab('tipos')" style="display:none;">⚙️ Tipos de Inspección</button>
+    <button class="tab-btn" id="tabBtnTipos" onclick="mostrarTab('tipos')">⚙️ Tipos de Inspección</button>
     <button class="tab-btn" id="tabBtnBitacora" onclick="mostrarTab('bitacora')">🧾 Bitácora</button>
-    <button class="tab-btn" id="tabBtnDetalle" onclick="mostrarTab('detalle')" style="display:none;">🔎 Detalle</button>
+    <button class="tab-btn" id="tabBtnDetalle" onclick="mostrarTab('detalle')">🔎 Detalle</button>
 </div>
 
 <div class="main-content">
@@ -1413,52 +1420,6 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
                 <thead><tr><th>Fecha y hora</th><th>Usuario</th><th>Acción</th><th>Detalle</th></tr></thead>
                 <tbody id="tbodyBitacora"></tbody>
             </table>
-        </div>
-    </div>
-
-    <!-- ============ HERRAMIENTAS / PERFIL ============ -->
-    <div id="panelPerfil" class="tab-panel">
-        <h2 class="panel-title">🛠️ Herramientas</h2>
-        <p class="panel-desc">Preferencias de tu cuenta — solo se guardan en este navegador, no se comparten con otros usuarios.</p>
-
-        <div class="insp-card">
-            <h3 style="margin-top:0; font-size:14px;">Foto de perfil</h3>
-            <div style="display:flex; align-items:center; gap:18px; flex-wrap:wrap;">
-                <img id="perfilAvatarPreview" class="avatar-grande" src="" style="display:none;">
-                <div id="perfilAvatarPlaceholder" class="avatar-grande" style="display:flex; align-items:center; justify-content:center; background:var(--bg-light); font-size:32px;">👤</div>
-                <div>
-                    <input type="file" accept="image/*" id="inputFotoPerfil" style="display:none;" onchange="cambiarFotoPerfil(this)">
-                    <button class="btn-secundario" onclick="document.getElementById('inputFotoPerfil').click()">📷 Cambiar foto</button>
-                    <button class="btn-chico" onclick="quitarFotoPerfil()">Quitar foto</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="insp-card">
-            <h3 style="margin-top:0; font-size:14px;">Apariencia</h3>
-            <div style="display:flex; gap:10px;">
-                <div class="tema-opcion" id="temaOpcionClaro" onclick="cambiarTema('claro')">☀️ Claro</div>
-                <div class="tema-opcion" id="temaOpcionOscuro" onclick="cambiarTema('oscuro')">🌙 Oscuro</div>
-            </div>
-        </div>
-
-        <div class="insp-card" id="perfilCardTiposInspeccion" style="display:none;">
-            <h3 style="margin-top:0; font-size:14px;">⚙️ Catálogo de inspecciones</h3>
-            <p class="panel-desc" style="margin-top:0;">Solo visible para Super Admin. Administra las inspecciones que aparecen para cada empresa.</p>
-            <button class="btn-secundario" onclick="mostrarTab('tipos')">⚙️ Gestionar Tipos de Inspección</button>
-        </div>
-
-        <div class="insp-card">
-            <h3 style="margin-top:0; font-size:14px;">Cambiar contraseña</h3>
-            <p class="panel-desc" style="margin-top:0;">Esta contraseña solo aplica en este navegador (todavía no hay servidor central). Si entras desde otro dispositivo, seguirá pidiendo la contraseña original hasta que la cambies ahí también.</p>
-            <div style="display:flex; gap:12px; flex-wrap:wrap; max-width:420px;">
-                <input type="password" id="fPerfilPasswordNueva" placeholder="Nueva contraseña" style="flex:1; min-width:180px;">
-                <input type="password" id="fPerfilPasswordConfirmar" placeholder="Confirmar contraseña" style="flex:1; min-width:180px;">
-            </div>
-            <div id="perfilPasswordError" style="display:none; color:var(--sec-red); font-size:12.5px; margin-top:8px;"></div>
-            <div style="margin-top:12px;">
-                <button class="btn-secundario" onclick="cambiarPasswordPerfil()">Actualizar contraseña</button>
-            </div>
         </div>
     </div>
 
@@ -2022,14 +1983,17 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
 
         <div id="configuracion" class="section">
             <h1>⚙️ Panel de Configuración del Usuario</h1>
-            
+            <p style="color:gray; margin-top:-8px;">Tu foto, tu contraseña y tus preferencias se manejan aquí, para toda la aplicación (incluyendo Inspecciones).</p>
+
             <div class="charts-container" style="margin-top: 15px;">
                 <div class="chart-box" style="flex:1;">
                     <h3>👤 Foto de Perfil</h3>
                     <div style="display:flex; flex-direction:column; align-items:center; gap:15px; background:#f8fafc; padding:20px; border-radius:10px;">
-                        <img id="config-avatar-preview" src="" style="width:120px; height:120px; border-radius:50%; object-fit:cover; border:3px solid var(--accent-blue);">
+                        <img id="config-avatar-preview" src="" style="width:120px; height:120px; border-radius:50%; object-fit:cover; border:3px solid var(--accent-blue); display:none;">
+                        <div id="config-avatar-placeholder" style="width:120px; height:120px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:40px; background:white; border:3px solid var(--accent-blue);">👤</div>
                         <input type="file" id="input-avatar-file" accept="image/*" onchange="actualizarFotoPerfil(this)">
-                        <small style="color:gray;">Sube un archivo de imagen local (.jpg, .png)</small>
+                        <button class="btn-chico" onclick="quitarFotoPerfilConfig()">Quitar foto</button>
+                        <small style="color:gray;">Se guarda en la nube: se ve igual en cualquier dispositivo donde inicies sesión.</small>
                     </div>
                 </div>
 
@@ -2042,6 +2006,25 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
                         <option value="light">☀️ Modo Claro Limpio</option>
                         <option value="eco">🌿 Modo Ecológico SST</option>
                     </select>
+
+                    <label style="margin-top:16px; display:block;">Modo oscuro (checklists de Inspecciones):</label>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn-chico" id="config-tema-claro" onclick="cambiarTemaConfig('claro')">☀️ Claro</button>
+                        <button class="btn-chico" id="config-tema-oscuro" onclick="cambiarTemaConfig('oscuro')">🌙 Oscuro</button>
+                    </div>
+
+                    <div style="margin-top:22px;">
+                        <h3 style="margin-bottom:6px;">🔒 Cambiar contraseña</h3>
+                        <p style="color:gray; font-size:12.5px; margin-top:0;">Esta es tu contraseña real: funciona en cualquier dispositivo donde inicies sesión, incluyendo el módulo de Inspecciones.</p>
+                        <div style="display:flex; gap:12px; flex-wrap:wrap; max-width:420px;">
+                            <input type="password" id="config-password-nueva" placeholder="Nueva contraseña" style="flex:1; min-width:180px;">
+                            <input type="password" id="config-password-confirmar" placeholder="Confirmar contraseña" style="flex:1; min-width:180px;">
+                        </div>
+                        <div id="config-password-error" style="display:none; color:#ef4444; font-size:12.5px; margin-top:8px;"></div>
+                        <div style="margin-top:12px;">
+                            <button class="btn-secundario" onclick="cambiarPasswordConfig()">Actualizar contraseña</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2264,7 +2247,7 @@ async function login(e) {
         await _sb.auth.signOut();
         return;
     }
-    usuarioActivo = { username: username, nombre: perfil.nombre, rol: perfil.rol, posicion: perfil.posicion };
+    usuarioActivo = { username: username, nombre: perfil.nombre, rol: perfil.rol, posicion: perfil.posicion, authId: data.user.id, foto: perfil.foto_url || "", tema: perfil.tema || "claro" };
     sessionStorage.setItem("sesion_usuario", JSON.stringify(usuarioActivo));
     verificarSesion();
 }
@@ -2380,16 +2363,12 @@ function limpiarFiltroFecha() {
 /* PREFERENCIAS */
 function cargarPreferenciasUsuarioActivo() {
     let keyTheme = `theme_${usuarioActivo.username}`;
-    let keyAvatar = `avatar_${usuarioActivo.username}`;
-    
     let savedTheme = localStorage.getItem(keyTheme) || "default";
-    let savedAvatar = localStorage.getItem(keyAvatar) || "";
-    
+
     cambiarTemaApariencia(savedTheme);
     document.getElementById("config-theme-selector").value = savedTheme;
-    
-    document.getElementById("sidebar-avatar").src = savedAvatar;
-    document.getElementById("config-avatar-preview").src = savedAvatar;
+
+    aplicarFotoPerfilEnPantalla();
 }
 
 function cambiarTemaApariencia(tema) {
@@ -2404,17 +2383,93 @@ function cambiarTemaApariencia(tema) {
 }
 
 function actualizarFotoPerfil(input) {
-    if (input.files && input.files[0]) {
-        let reader = new FileReader();
-        reader.onload = function(e) {
-            let base64Img = e.target.result;
-            document.getElementById("sidebar-avatar").src = base64Img;
-            document.getElementById("config-avatar-preview").src = base64Img;
-            localStorage.setItem(`avatar_${usuarioActivo.username}`, base64Img);
-            sbSet(`avatar_${usuarioActivo.username}`, base64Img);
+    let file = input.files && input.files[0];
+    if (!file || !usuarioActivo) return;
+    let reader = new FileReader();
+    reader.onload = function(e) {
+        let img = new Image();
+        img.onload = async function() {
+            let maxW = 320;
+            let escala = Math.min(1, maxW / img.width);
+            let canvas = document.createElement("canvas");
+            canvas.width = img.width * escala;
+            canvas.height = img.height * escala;
+            canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob(async function(blob) {
+                let ruta = `${usuarioActivo.authId}.jpg`;
+                let { error: errSubida } = await _sb.storage.from("avatares").upload(ruta, blob, { upsert: true, contentType: "image/jpeg" });
+                if (errSubida) { alert("No se pudo subir la foto: " + errSubida.message); return; }
+                let { data: pub } = _sb.storage.from("avatares").getPublicUrl(ruta);
+                let fotoUrl = pub.publicUrl + "?t=" + Date.now();
+                let { error } = await _sb.from("perfiles").upsert({ usuario_id: usuarioActivo.authId, foto_url: fotoUrl }, { onConflict: "usuario_id" });
+                if (error) { alert("No se pudo guardar en Supabase: " + error.message); return; }
+                usuarioActivo.foto = fotoUrl;
+                sessionStorage.setItem("sesion_usuario", JSON.stringify(usuarioActivo));
+                aplicarFotoPerfilEnPantalla();
+            }, "image/jpeg", 0.75);
         };
-        reader.readAsDataURL(input.files[0]);
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+async function quitarFotoPerfilConfig() {
+    if (!usuarioActivo) return;
+    let { error } = await _sb.from("perfiles").upsert({ usuario_id: usuarioActivo.authId, foto_url: null }, { onConflict: "usuario_id" });
+    if (error) { alert("No se pudo actualizar en Supabase: " + error.message); return; }
+    usuarioActivo.foto = "";
+    sessionStorage.setItem("sesion_usuario", JSON.stringify(usuarioActivo));
+    aplicarFotoPerfilEnPantalla();
+}
+
+function aplicarFotoPerfilEnPantalla() {
+    let foto = (usuarioActivo && usuarioActivo.foto) || "";
+    let sidebarAvatar = document.getElementById("sidebar-avatar");
+    let preview = document.getElementById("config-avatar-preview");
+    let placeholder = document.getElementById("config-avatar-placeholder");
+    if (sidebarAvatar) sidebarAvatar.src = foto || "";
+    if (preview) preview.style.display = foto ? "block" : "none";
+    if (preview) preview.src = foto || "";
+    if (placeholder) placeholder.style.display = foto ? "none" : "flex";
+    // También refleja el cambio dentro del módulo Inspecciones si está abierto.
+    if (typeof perfiles !== "undefined" && sesionActual) {
+        perfiles[sesionActual.usuario] = perfiles[sesionActual.usuario] || {};
+        perfiles[sesionActual.usuario].foto = foto;
     }
+
+    let tema = (usuarioActivo && usuarioActivo.tema) || "claro";
+    document.body.classList.toggle("tema-oscuro", tema === "oscuro");
+    let btnClaro = document.getElementById("config-tema-claro");
+    let btnOscuro = document.getElementById("config-tema-oscuro");
+    if (btnClaro) btnClaro.classList.toggle("active", tema === "claro");
+    if (btnOscuro) btnOscuro.classList.toggle("active", tema === "oscuro");
+}
+
+async function cambiarTemaConfig(tema) {
+    if (!usuarioActivo) return;
+    let { error } = await _sb.from("perfiles").upsert({ usuario_id: usuarioActivo.authId, tema }, { onConflict: "usuario_id" });
+    if (error) { alert("No se pudo guardar en Supabase: " + error.message); return; }
+    usuarioActivo.tema = tema;
+    sessionStorage.setItem("sesion_usuario", JSON.stringify(usuarioActivo));
+    if (typeof perfiles !== "undefined" && sesionActual) {
+        perfiles[sesionActual.usuario] = perfiles[sesionActual.usuario] || {};
+        perfiles[sesionActual.usuario].tema = tema;
+    }
+    aplicarFotoPerfilEnPantalla();
+}
+
+async function cambiarPasswordConfig() {
+    let nueva = document.getElementById("config-password-nueva").value;
+    let confirmar = document.getElementById("config-password-confirmar").value;
+    let error = document.getElementById("config-password-error");
+    if (nueva.length < 6) { error.innerText = "La contraseña debe tener al menos 6 caracteres."; error.style.display = "block"; return; }
+    if (nueva !== confirmar) { error.innerText = "Las contraseñas no coinciden."; error.style.display = "block"; return; }
+    let { error: errAuth } = await _sb.auth.updateUser({ password: nueva });
+    if (errAuth) { error.innerText = "No se pudo actualizar: " + errAuth.message; error.style.display = "block"; return; }
+    error.style.display = "none";
+    alert("Contraseña actualizada. Ya puedes usarla la próxima vez que inicies sesión, desde cualquier dispositivo.");
+    document.getElementById("config-password-nueva").value = "";
+    document.getElementById("config-password-confirmar").value = "";
 }
 
 /* ACCIDENTABILIDAD MULTI-EMPRESA */
@@ -3865,7 +3920,7 @@ function updateCharts() {
         const username = session.user.email.split("@")[0].toLowerCase();
         const { data: perfil } = await _sb.from('perfiles').select('*').eq('usuario_id', session.user.id).single();
         if (perfil) {
-            usuarioActivo = { username: username, nombre: perfil.nombre, rol: perfil.rol, posicion: perfil.posicion };
+            usuarioActivo = { username: username, nombre: perfil.nombre, rol: perfil.rol, posicion: perfil.posicion, authId: session.user.id, foto: perfil.foto_url || "", tema: perfil.tema || "claro" };
             sessionStorage.setItem("sesion_usuario", JSON.stringify(usuarioActivo));
         }
     }
@@ -4226,38 +4281,34 @@ const TIPO_MONTACARGAS = {
     ]}
 };
 
-/* ==================== USUARIOS Y SESIÓN ====================
-   La contraseña real y el rol ahora viven en Supabase Auth (no aquí). Esta lista solo
-   sirve para pintar el dropdown de login y saber cuál usuario debe pedir "tu nombre"
-   (el genérico "colaborador"). Cada usuario debe existir en Supabase → Authentication →
-   Users, con email "usuario@notionsgroup.local" y user_metadata: {"nombre":"...","rol":"..."} */
-const USUARIOS = [
-    { usuario:"superadmin",  nombre:"Super Administrador" },
-    { usuario:"joan",        nombre:"Joan Garcia" },
-    { usuario:"jhoan",       nombre:"Jhoan Hilario" },
-    { usuario:"victor",      nombre:"Victor Torres" },
-    { usuario:"auditor",     nombre:"Auditor/a" },
-    { usuario:"colaborador", nombre:"Colaborador / Pasante", generico:true }
-];
+/* ==================== SESIÓN (módulo Inspecciones) ====================
+   Ya NO hay un login propio aquí: se reutiliza la sesión de Supabase Auth que
+   se abrió al entrar al dashboard principal (login()). El rol de Inspecciones
+   (superadmin/auditor/usuario) sigue viviendo en Supabase → Authentication →
+   Users → user_metadata → "rol", solo que ahora se lee automáticamente sin
+   pedir usuario/contraseña otra vez. */
 
 let sesionActual = null; // { usuario, nombre, rol, authId }
 
-// Inspecciones ya no tiene su propio login: reutiliza la sesión que abriste en la
-// pantalla principal (mismo cliente de Supabase). "Cerrar sesión" aquí cierra la
-// sesión completa de la aplicación (macro + Inspecciones).
+function mostrarErrorSesion(msg) {
+    let card = document.querySelector("#pantallaLogin .insp-login-card");
+    if (card) card.innerHTML = `<h2>⚠️ No se pudo abrir Inspecciones</h2><p class="insp-login-sub">${msg}</p><button class="btn-primario" onclick="location.reload()">Reintentar</button>`;
+    document.getElementById("pantallaLogin").style.display = "flex";
+}
+
 async function cerrarSesion() {
-    sesionActual = null;
-    document.getElementById("appContenido").style.display = "none";
+    // La sesión es la misma del dashboard principal, así que cerrarla aquí
+    // cierra sesión de toda la aplicación (evita dejar una sesión "fantasma").
     await logout();
 }
 
 function entrarAlApp() {
+    document.getElementById("pantallaLogin").style.display = "none";
     document.getElementById("appContenido").style.display = "block";
     let miPerfil = perfiles[sesionActual.usuario] || {};
     document.body.classList.toggle("tema-oscuro", miPerfil.tema === "oscuro");
     document.getElementById("topbarSesion").innerHTML = `
-        <span class="chip ${sesionActual.rol === "superadmin" ? "chip-admin" : ""}">${miPerfil.foto ? `<img src="${miPerfil.foto}" class="avatar-chip">` : "👤 "}${sesionActual.nombre}${sesionActual.rol === "superadmin" ? " · Super Admin" : sesionActual.rol === "auditor" ? " · Auditor/a (solo lectura)" : ""}</span>
-        <button class="btn-chico" onclick="mostrarTab('perfil')">🛠️ Herramientas</button>
+        <span class="chip">${miPerfil.foto ? `<img src="${miPerfil.foto}" class="avatar-chip">` : "👤 "}${sesionActual.nombre}</span>
         <button class="btn-chico" onclick="cerrarSesion()">Cerrar sesión</button>
     `;
     document.getElementById("tabBtnInicio").style.display = esAuditor() ? "none" : "inline-block";
@@ -4279,10 +4330,17 @@ async function intentarSesionGuardada() {
             let user = data.session.user;
             let meta = user.user_metadata || {};
             let uId = (user.email || "").split("@")[0];
-            let uConocido = USUARIOS.find(x => x.usuario === uId);
-            sesionActual = { usuario: uId, nombre: meta.nombre || (uConocido ? uConocido.nombre : uId), rol: meta.rol || "usuario", authId: user.id };
+            // El nombre "oficial" viene del perfil del dashboard principal (usuarioActivo),
+            // que es la misma cuenta; si no está disponible todavía, se usa el de Supabase.
+            let nombreFinal = (typeof usuarioActivo !== "undefined" && usuarioActivo && usuarioActivo.nombre) || meta.nombre || uId;
+            sesionActual = { usuario: uId, nombre: nombreFinal, rol: meta.rol || "usuario", authId: user.id };
             await cargarDatosInspeccionesDesdeSupabase();
             entrarAlApp();
+        } else {
+            // No hay sesión de Supabase activa: esto no debería pasar porque para llegar
+            // aquí ya tuviste que iniciar sesión en el dashboard principal. Si ocurre
+            // (p.ej. la sesión expiró), se lo indicamos en vez de mostrar un login duplicado.
+            mostrarErrorSesion("Tu sesión expiró o no se pudo verificar. Vuelve a iniciar sesión desde la pantalla principal.");
         }
     } finally {
         intentandoSesionGuardada = false;
@@ -4399,7 +4457,6 @@ function renderBitacora() {
 
 /* ==================== NAVEGACIÓN DE TABS ==================== */
 function mostrarTab(id) {
-    if (id === "tipos" && !esSuperAdmin()) { alert("Solo el Super Admin puede entrar a Tipos de Inspección."); id = "inicio"; }
     document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
     document.getElementById("panel" + id.charAt(0).toUpperCase() + id.slice(1)).classList.add("active");
@@ -4411,7 +4468,9 @@ function mostrarTab(id) {
     if (id === "comparativa") renderComparativa();
     if (id === "tipos") renderCatalogoTipos();
     if (id === "bitacora") renderBitacora();
-    if (id === "perfil") renderPerfil();
+    if (id === "detalle" && document.getElementById("panelDetalle").dataset.cargado !== "1") {
+        document.getElementById("detalleContenido").innerHTML = `<div class="catalogo-vacio">Todavía no has abierto ninguna inspección. Ve a <b>Historial</b> y pulsa <b>Ver</b> en la que quieras revisar.</div>`;
+    }
 }
 
 /* ==================== EMPEZAR: elegir empresa + tipo ==================== */
@@ -4569,7 +4628,9 @@ function filtrarCatalogoPorEmpresa(empresa) {
 }
 
 function renderCatalogoTipos() {
-    if (!exigirSuperAdmin("Solo el Super Admin puede ver y editar el catálogo de inspecciones.")) { mostrarTab("inicio"); return; }
+    let puedeEditar = esSuperAdmin();
+    let cardConstructor = document.getElementById("cardConstructorTipo");
+    if (cardConstructor) cardConstructor.style.display = puedeEditar ? "block" : "none";
 
     let cont = document.getElementById("checkboxesEmpresaTipo");
     cont.innerHTML = EMPRESAS.map(e => `<label style="font-size:13px;"><input type="checkbox" class="chk-empresa-tipo" value="${e}"> ${e}</label>`).join("");
@@ -4624,11 +4685,11 @@ function renderCatalogoTipos() {
                 <div class="tipo-card-empresas">${t.empresas.map(e => `<span class="chip-empresa" style="background:${colorEmpresa(e)};">${e}</span>`).join("")}</div>
                 <div class="tipo-card-detalle">${detalle}</div>
                 <div class="tipo-card-footer">
-                    <button class="btn-chico" onclick="editarTipo('${t.id}')">Editar</button>
-                    ${t.integrado && tieneOverride ? `<button class="btn-chico" onclick="restablecerTipoIntegrado('${t.id}')">Restablecer</button>` : ""}
-                    ${t.integrado
+                    ${puedeEditar ? `<button class="btn-chico" onclick="editarTipo('${t.id}')">Editar</button>` : ""}
+                    ${puedeEditar && t.integrado && tieneOverride ? `<button class="btn-chico" onclick="restablecerTipoIntegrado('${t.id}')">Restablecer</button>` : ""}
+                    ${puedeEditar ? (t.integrado
                         ? `<button class="btn-chico rojo" onclick="eliminarTipoIntegrado('${t.id}')">Borrar</button>`
-                        : `<button class="btn-chico rojo" onclick="eliminarTipoCustom('${t.id}')">Eliminar</button>`}
+                        : `<button class="btn-chico rojo" onclick="eliminarTipoCustom('${t.id}')">Eliminar</button>`) : ""}
                 </div>
             </div>
         `;
@@ -4637,7 +4698,7 @@ function renderCatalogoTipos() {
 
     let contOcultos = document.getElementById("listaTiposOcultos");
     let ocultos = TIPOS_INTEGRADOS_BASE.filter(t => tiposIntegradosOcultos.includes(t.id));
-    document.getElementById("cardTiposOcultos").style.display = ocultos.length ? "block" : "none";
+    document.getElementById("cardTiposOcultos").style.display = (puedeEditar && ocultos.length) ? "block" : "none";
     if (contOcultos) {
         contOcultos.innerHTML = ocultos.map(t => `
         <div class="item-row" style="grid-template-columns:1fr auto;">
@@ -5002,97 +5063,6 @@ function aplicarEstadoAlFormulario(tipo) {
         if (inputEspecifique && v.especifique) inputEspecifique.value = v.especifique;
         if (v.foto) mostrarPreviewFoto(it.id, v.foto);
     });
-}
-
-/* ==================== HERRAMIENTAS / PERFIL ==================== */
-function renderPerfil() {
-    let miPerfil = perfiles[sesionActual.usuario] || {};
-    document.getElementById("perfilCardTiposInspeccion").style.display = esSuperAdmin() ? "block" : "none";
-    let img = document.getElementById("perfilAvatarPreview");
-    let placeholder = document.getElementById("perfilAvatarPlaceholder");
-    if (miPerfil.foto) { img.src = miPerfil.foto; img.style.display = "block"; placeholder.style.display = "none"; }
-    else { img.style.display = "none"; placeholder.style.display = "flex"; }
-
-    let temaActual = miPerfil.tema === "oscuro" ? "oscuro" : "claro";
-    document.getElementById("temaOpcionClaro").classList.toggle("activo", temaActual === "claro");
-    document.getElementById("temaOpcionOscuro").classList.toggle("activo", temaActual === "oscuro");
-
-    document.getElementById("fPerfilPasswordNueva").value = "";
-    document.getElementById("fPerfilPasswordConfirmar").value = "";
-    document.getElementById("perfilPasswordError").style.display = "none";
-}
-
-async function cambiarFotoPerfil(input) {
-    let file = input.files[0];
-    if (!file) return;
-    let reader = new FileReader();
-    reader.onload = function(e) {
-        let img = new Image();
-        img.onload = async function() {
-            let maxW = 320;
-            let escala = Math.min(1, maxW / img.width);
-            let canvas = document.createElement("canvas");
-            canvas.width = img.width * escala;
-            canvas.height = img.height * escala;
-            canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-            canvas.toBlob(async function(blob) {
-                mostrarEstadoSync("Subiendo foto...", "cargando");
-                let ruta = `${sesionActual.authId}.jpg`;
-                let { error: errSubida } = await sb.storage.from("avatares").upload(ruta, blob, { upsert:true, contentType:"image/jpeg" });
-                if (errSubida) { mostrarEstadoSync("No se pudo subir: " + errSubida.message, "error"); alert("No se pudo subir la foto: " + errSubida.message); return; }
-                let { data: pub } = sb.storage.from("avatares").getPublicUrl(ruta);
-                let fotoUrl = pub.publicUrl + "?t=" + Date.now(); // evita que quede en caché la foto vieja
-                let { error } = await sb.from("perfiles").upsert({ usuario_id: sesionActual.authId, foto_url: fotoUrl }, { onConflict:"usuario_id" });
-                if (error) { mostrarEstadoSync("No se pudo guardar: " + error.message, "error"); alert("No se pudo guardar en Supabase: " + error.message); return; }
-                mostrarEstadoSync("Foto de perfil actualizada", "ok");
-                perfiles[sesionActual.usuario] = perfiles[sesionActual.usuario] || {};
-                perfiles[sesionActual.usuario].foto = fotoUrl;
-                renderPerfil();
-                entrarAlApp();
-                mostrarTab("perfil");
-            }, "image/jpeg", 0.75);
-        };
-        img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-}
-
-async function quitarFotoPerfil() {
-    mostrarEstadoSync("Guardando en la nube...", "cargando");
-    let { error } = await sb.from("perfiles").upsert({ usuario_id: sesionActual.authId, foto_url: null }, { onConflict:"usuario_id" });
-    if (error) { mostrarEstadoSync("No se pudo actualizar: " + error.message, "error"); alert("No se pudo actualizar en Supabase: " + error.message); return; }
-    mostrarEstadoSync("Guardado en la nube", "ok");
-    if (perfiles[sesionActual.usuario]) delete perfiles[sesionActual.usuario].foto;
-    renderPerfil();
-    entrarAlApp();
-    mostrarTab("perfil");
-}
-
-async function cambiarTema(tema) {
-    mostrarEstadoSync("Guardando en la nube...", "cargando");
-    let { error } = await sb.from("perfiles").upsert({ usuario_id: sesionActual.authId, tema }, { onConflict:"usuario_id" });
-    if (error) { mostrarEstadoSync("No se pudo guardar: " + error.message, "error"); alert("No se pudo guardar en Supabase: " + error.message); return; }
-    mostrarEstadoSync("Guardado en la nube", "ok");
-    perfiles[sesionActual.usuario] = perfiles[sesionActual.usuario] || {};
-    perfiles[sesionActual.usuario].tema = tema;
-    document.body.classList.toggle("tema-oscuro", tema === "oscuro");
-    renderPerfil();
-}
-
-async function cambiarPasswordPerfil() {
-    let nueva = document.getElementById("fPerfilPasswordNueva").value;
-    let confirmar = document.getElementById("fPerfilPasswordConfirmar").value;
-    let error = document.getElementById("perfilPasswordError");
-    if (nueva.length < 6) { error.innerText = "La contraseña debe tener al menos 6 caracteres."; error.style.display = "block"; return; }
-    if (nueva !== confirmar) { error.innerText = "Las contraseñas no coinciden."; error.style.display = "block"; return; }
-    mostrarEstadoSync("Actualizando contraseña...", "cargando");
-    let { error: errAuth } = await sb.auth.updateUser({ password: nueva });
-    if (errAuth) { mostrarEstadoSync("No se pudo actualizar: " + errAuth.message, "error"); error.innerText = "No se pudo actualizar: " + errAuth.message; error.style.display = "block"; return; }
-    mostrarEstadoSync("Contraseña actualizada", "ok");
-    error.style.display = "none";
-    alert("Contraseña actualizada. Ya puedes usarla la próxima vez que inicies sesión, desde cualquier dispositivo.");
-    document.getElementById("fPerfilPasswordNueva").value = "";
-    document.getElementById("fPerfilPasswordConfirmar").value = "";
 }
 
 function marcarCondicion(id, valor, btn) {
@@ -5713,7 +5683,7 @@ function verDetalleInspeccion(id) {
         ${insp.observaciones ? `<div class="insp-card"><h3 style="margin-top:0; font-size:14px;">Observaciones generales</h3><p style="font-size:13.5px; white-space:pre-wrap;">${insp.observaciones}</p></div>` : ""}
     `;
 
-    document.getElementById("tabBtnDetalle").style.display = "inline-block";
+    document.getElementById("panelDetalle").dataset.cargado = "1";
     mostrarTab("detalle");
 }
 
