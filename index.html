@@ -1343,6 +1343,12 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
                     <div><label>Etiqueta de condición positiva</label><input id="fTipoCondPos" value="Adecuado"></div>
                     <div><label>Etiqueta de condición negativa</label><input id="fTipoCondNeg" value="Mejorar"></div>
                 </div>
+                <div style="margin:10px 0;">
+                    <label style="font-size:13px;"><input type="checkbox" id="fTipoTieneNA" onchange="toggleNAConstructorTipo()"> Agregar también la opción "N/A" (No aplica) para cada elemento</label>
+                </div>
+                <div class="form-grid" id="filaNAPersonalizada" style="display:none; margin-bottom:10px;">
+                    <div><label>Etiqueta para "No aplica"</label><input id="fTipoEtiquetaNA" value="N/A"></div>
+                </div>
                 <div style="margin:14px 0;">
                     <label style="display:block; font-size:11.5px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.4px; margin-bottom:6px;">Elementos a inspeccionar (uno por línea)</label>
                     <p style="font-size:11.5px; color:var(--text-muted); margin:0 0 6px 0;">Para agrupar en secciones (como "I. EPP"), escribe una línea que empiece con <strong>##</strong>. Para agregar una pista de "Especifique" a un elemento, ponla después de una barra vertical: <code>Elemento | pista</code>.</p>
@@ -4586,6 +4592,9 @@ function cambiarPresetEtiquetas() {
 function toggleCondicionTipo() {
     document.getElementById("filaCondicionPersonalizada").style.display = document.getElementById("fTipoTieneCondicion").checked ? "grid" : "none";
 }
+function toggleNAConstructorTipo() {
+    document.getElementById("filaNAPersonalizada").style.display = document.getElementById("fTipoTieneNA").checked ? "grid" : "none";
+}
 function toggleCamposColEval() {
     let tipo = document.getElementById("fNuevaColEvalTipo").value;
     document.getElementById("camposColEvalSiNo").style.display = tipo === "si_no" ? "grid" : "none";
@@ -4737,6 +4746,7 @@ function renderCatalogoTipos() {
     cambiarModoConstructorTipo();
     cambiarPresetEtiquetas();
     toggleCondicionTipo();
+    toggleNAConstructorTipo();
     toggleCamposColEval();
     renderListaColumnasEvaluacionTemp();
 }
@@ -4777,6 +4787,10 @@ async function agregarTipoInspeccion() {
         if (tipoBase.tieneCondicion) {
             tipoBase.etiquetaCondicionPositiva = document.getElementById("fTipoCondPos").value.trim() || "Adecuado";
             tipoBase.etiquetaCondicionNegativa = document.getElementById("fTipoCondNeg").value.trim() || "Mejorar";
+        }
+        tipoBase.tieneNA = document.getElementById("fTipoTieneNA").checked;
+        if (tipoBase.tieneNA) {
+            tipoBase.etiquetaNA = document.getElementById("fTipoEtiquetaNA").value.trim() || "N/A";
         }
         detalleTipo = `${checklist.length} elementos, marca ${etiquetaPos}/${etiquetaNeg}, ${tipoBase.puntosPorItem} pts c/u`;
     } else {
@@ -4844,6 +4858,8 @@ function limpiarFormularioTipo() {
     document.getElementById("fTipoTieneCondicion").checked = false;
     document.getElementById("fTipoCondPos").value = "Adecuado";
     document.getElementById("fTipoCondNeg").value = "Mejorar";
+    document.getElementById("fTipoTieneNA").checked = false;
+    document.getElementById("fTipoEtiquetaNA").value = "N/A";
     document.getElementById("fTipoElementos").value = "";
     document.getElementById("fTipoColumnasDescriptivas").value = "";
     document.getElementById("fTipoColumnaObservacion").value = "";
@@ -4851,6 +4867,7 @@ function limpiarFormularioTipo() {
     cambiarModoConstructorTipo();
     cambiarPresetEtiquetas();
     toggleCondicionTipo();
+    toggleNAConstructorTipo();
     renderListaColumnasEvaluacionTemp();
 }
 
@@ -4886,11 +4903,16 @@ function editarTipo(id) {
             document.getElementById("fTipoCondPos").value = tipo.etiquetaCondicionPositiva || "Adecuado";
             document.getElementById("fTipoCondNeg").value = tipo.etiquetaCondicionNegativa || "Mejorar";
         }
+        document.getElementById("fTipoTieneNA").checked = !!tipo.tieneNA;
+        if (tipo.tieneNA) {
+            document.getElementById("fTipoEtiquetaNA").value = tipo.etiquetaNA || "N/A";
+        }
     }
 
     cambiarModoConstructorTipo();
     cambiarPresetEtiquetas();
     toggleCondicionTipo();
+    toggleNAConstructorTipo();
     renderListaColumnasEvaluacionTemp();
     document.getElementById("btnGuardarTipo").innerText = "💾 Guardar cambios";
     toggleConstructorTipo(true);
