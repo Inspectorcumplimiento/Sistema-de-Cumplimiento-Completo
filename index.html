@@ -1163,7 +1163,6 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
 </div>
 
 <div id="appContenido" style="display:none;">
-<div id="topbarSesion" style="display:flex; align-items:center; justify-content:flex-end; gap:10px; padding:8px 4px;"></div>
 <div class="tabs-bar">
     <button class="tab-btn" id="tabBtnNueva" onclick="mostrarTab('nueva')" style="display:none;">📋 Nueva Inspección</button>
     <button class="tab-btn active" id="tabBtnInicio" onclick="mostrarTab('inicio')">🏢 Empezar</button>
@@ -4304,21 +4303,11 @@ function mostrarErrorSesion(msg) {
     document.getElementById("pantallaLogin").style.display = "flex";
 }
 
-async function cerrarSesion() {
-    // La sesión es la misma del dashboard principal, así que cerrarla aquí
-    // cierra sesión de toda la aplicación (evita dejar una sesión "fantasma").
-    await logout();
-}
-
 function entrarAlApp() {
     document.getElementById("pantallaLogin").style.display = "none";
     document.getElementById("appContenido").style.display = "block";
     let miPerfil = perfiles[sesionActual.usuario] || {};
     document.body.classList.toggle("tema-oscuro", miPerfil.tema === "oscuro");
-    document.getElementById("topbarSesion").innerHTML = `
-        <span class="chip">${miPerfil.foto ? `<img src="${miPerfil.foto}" class="avatar-chip">` : "👤 "}${sesionActual.nombre}</span>
-        <button class="btn-chico" onclick="cerrarSesion()">Cerrar sesión</button>
-    `;
     document.getElementById("tabBtnInicio").style.display = esAuditor() ? "none" : "inline-block";
     mostrarTab(esAuditor() ? "historial" : "inicio");
 }
