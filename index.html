@@ -816,6 +816,10 @@ body.tema-oscuro ::-webkit-scrollbar-thumb { border-color: var(--bg-light); }
 .tema-opcion:hover { transform:translateY(-1px); }
 .tema-opcion.activo { border-color:var(--accent-blue); background:rgba(53,82,214,.08); color:var(--accent-blue); }
 .sync-status { position:fixed; bottom:18px; right:18px; z-index:9999; padding:10px 16px; border-radius:10px; font-size:13px; font-weight:600; box-shadow:var(--shadow-lg); color:white; display:none; max-width:320px; animation:slideUp .25s var(--ease); }
+.offline-banner { align-items:center; gap:8px; padding:10px 16px; border-radius:10px; font-size:13px; font-weight:600; margin-bottom:14px; }
+.offline-banner-rojo { background:#FDECEA; color:#B3261E; border:1px solid #F5C2BE; }
+.offline-banner-amarillo { background:#FFF6E5; color:#8A5B00; border:1px solid #F5DFA6; }
+.badge-pendiente-sync { background:#FFF6E5; color:#8A5B00; border:1px solid #F5DFA6; border-radius:6px; padding:2px 7px; font-size:10.5px; font-weight:700; white-space:nowrap; }
 @keyframes slideUp { from{ opacity:0; transform:translateY(10px);} to{ opacity:1; transform:translateY(0);} }
 .sync-cargando { background:#3552D6; }
 .sync-ok { background:#1C9A6C; }
@@ -1155,6 +1159,7 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
         <div id="inspecciones" class="section">
     <div id="inspeccionesRaiz" style="position:relative; min-height:400px;">
 <div id="syncStatus" class="sync-status"></div>
+<div id="offlineBanner" class="offline-banner" style="display:none;"></div>
 <div id="pantallaLogin" class="insp-login-wrap" style="display:none;">
     <div class="insp-login-card" style="text-align:center;">
         <h2>🔄 Cargando tu sesión...</h2>
@@ -2299,8 +2304,6 @@ function verificarSesion() {
         rotarSabiasQue();
 
         let puedeSupervisar = usuarioActivo.rol === "admin" || usuarioActivo.rol === "supervisor";
-        // Solo Victor (supervisor) y el Super Admin manejan la vista global del Dashboard.
-        // Joan y Jhoan (empleados) no ven el selector "Ver datos de": su Dashboard es personal.
         document.getElementById("admin-view-selector").style.display = puedeSupervisar ? "flex" : "none";
         document.getElementById("welcome-title").innerText = puedeSupervisar ? "Dashboard Global de Control" : `Dashboard - ${usuarioActivo.nombre}`;
         
@@ -2340,31 +2343,20 @@ function configurarSelectoresPorRol() {
         optionsForm += `<option value="superadmin">Super Administrador</option>`;
     }
 
-    // Joan y Jhoan (rol "empleado"): el Dashboard principal (Actividades) es personal,
-    // no pueden ver ni filtrar el trabajo de los demás. Solo quedan bloqueados a su
-    // propio usuario (las tareas de "Equipo" siempre se les muestran aparte, en render()).
-    // Victor (supervisor) y el Super Admin sí conservan la vista global completa.
-    if (usuarioActivo.rol === "empleado") {
-        filtroSelect.innerHTML = `<option value="${usuarioActivo.username}">${usuarioActivo.nombre} (tú)</option>`;
-    } else {
-        filtroSelect.innerHTML = optionsFiltro;
-    }
-
-    let optionsFormConEquipo = optionsForm + `<option value="equipo">👥 Equipo (Joan, Jhoan y Victor)</option>`;
-
-    asignaAct.innerHTML = optionsFormConEquipo;
+    filtroSelect.innerHTML = optionsFiltro;
+    asignaAct.innerHTML = optionsForm;
     asignaAsoc.innerHTML = optionsForm;
     if (asignaInd) asignaInd.innerHTML = optionsForm;
-    if (asignaJor) asignaJor.innerHTML = optionsFormConEquipo;
+    if (asignaJor) asignaJor.innerHTML = optionsForm + `<option value="equipo">👥 Equipo (Joan, Jhoan y Victor)</option>`;
 }
 
-// Trazabilidad de actividades: TODOS los roles que llegan al dashboard (admin, supervisor,
-// empleado) pueden VER el historial completo de todos ("público" para consulta), pero no
-// pueden editar/borrar registros ajenos (eso lo sigue bloqueando "deshabilitarControl" en
-// render(), que solo permite tocar lo propio salvo que seas admin). El colaborador de campo
-// nunca llega hasta aquí: su sesión salta directo a Inspecciones y no ve este dashboard.
+// Visibilidad de actividades: Victor (supervisor/gerente) y el Super Admin ven el historial
+// completo de todos, porque de ahí gestionan al equipo. Joan y Jhoan (empleados) solo ven lo
+// suyo — lo que ellos crearon o lo que alguien les asignó — nunca lo de otro compañero. El
+// colaborador de campo nunca llega hasta aquí: su sesión salta directo a Inspecciones.
 function getFiltroUsuario() {
-    return document.getElementById("filtroEmpleado").value;
+    let esGestor = usuarioActivo.rol === "admin" || usuarioActivo.rol === "supervisor";
+    return esGestor ? document.getElementById("filtroEmpleado").value : usuarioActivo.username;
 }
 
 function ejecutarFiltroGlobal() {
@@ -3370,10 +3362,6 @@ function render(){
     let filtro = getFiltroUsuario();
     let filtroDia = document.getElementById("filtroCalendarioDia").value;
     let hoyStr = obtenerFechaHoyLocal();
-    // Joan y Jhoan (rol "empleado") solo ven su propio trabajo en este Dashboard,
-    // salvo las tareas asignadas explícitamente a "Equipo" (visibles para todos).
-    // Victor (supervisor) y el Super Admin conservan la vista global con el filtro.
-    let restringidoPersonal = usuarioActivo.rol === "empleado";
 
     let indicadorDashboard = document.getElementById("dashboard-date-indicator");
     if(indicadorDashboard) {
@@ -3391,9 +3379,7 @@ function render(){
         if (usuarioActivo.rol === "supervisor" && a.usuario === "superadmin") return;
 
         // Reglas de visualización por filtro global del Dashboard
-        let pasaFiltroUsuario = restringidoPersonal
-            ? (a.usuario === usuarioActivo.username || a.usuario === "equipo")
-            : (filtro === "todos" || a.usuario === filtro);
+        let pasaFiltroUsuario = (filtro === "todos" || a.usuario === filtro);
         let coincideConFechaFiltro = (!filtroDia || a.fecha === filtroDia);
 
         if (pasaFiltroUsuario && coincideConFechaFiltro) {
@@ -3407,7 +3393,7 @@ function render(){
         
         // Bloqueo de seguridad si la tarea pertenece a otra persona y no se es admin
         let deshabilitarControl = (usuarioActivo.rol !== "admin" && a.usuario !== usuarioActivo.username) ? "disabled" : "";
-        let nombreDisplay = a.usuario === "equipo" ? "👥 Equipo (Joan, Jhoan y Victor)" : (USUARIOS_VALIDOS[a.usuario] ? USUARIOS_VALIDOS[a.usuario].nombre : "Desconocido");
+        let nombreDisplay = USUARIOS_VALIDOS[a.usuario] ? USUARIOS_VALIDOS[a.usuario].nombre : "Desconocido";
 
         // 1. Render de Tabla Operativa Diaria
         if (pasaFiltroUsuario && coincideConFechaFiltro) {
@@ -4005,6 +3991,98 @@ function mostrarEstadoSync(mensaje, tipo) {
         syncTimeoutId = setTimeout(() => { el.style.display = "none"; }, tipo === "error" ? 7000 : 2200);
     }
 }
+
+/* ==================== MODO OFFLINE ====================
+   Si se pierde la señal a mitad de una inspección (muy común dentro de una nave), la app
+   sigue funcionando: guarda todo en este dispositivo (localStorage) y lo sube solo apenas
+   vuelva la conexión. Esto cubre el caso de quedarte sin señal con la página ya abierta;
+   no cubre abrir la app por primera vez sin haber tenido conexión nunca en este dispositivo. */
+
+function colaSync() {
+    try { return JSON.parse(localStorage.getItem("insp_cola_sync")) || []; } catch(e) { return []; }
+}
+function guardarColaSync(cola) {
+    try { localStorage.setItem("insp_cola_sync", JSON.stringify(cola)); } catch(e) { /* dispositivo sin espacio: no es crítico */ }
+    actualizarIndicadorOffline();
+}
+function encolarOperacion(op) {
+    let cola = colaSync();
+    cola.push(op);
+    guardarColaSync(cola);
+}
+
+function guardarCacheOffline() {
+    try {
+        localStorage.setItem("insp_cache_offline", JSON.stringify({
+            inspecciones: inspecciones.filter(i => !i._pendienteSync),
+            tiposCustom, overridesTipos, tiposIntegradosOcultos,
+            bitacora: bitacora.slice(0, 200)
+        }));
+    } catch(e) { /* dispositivo sin espacio: no es crítico, se sigue trabajando en memoria */ }
+}
+function cargarCacheOffline() {
+    try { return JSON.parse(localStorage.getItem("insp_cache_offline")) || null; } catch(e) { return null; }
+}
+
+function actualizarIndicadorOffline() {
+    let banner = document.getElementById("offlineBanner");
+    if (!banner) return;
+    let pendientes = colaSync().length;
+    if (!navigator.onLine) {
+        banner.style.display = "flex";
+        banner.className = "offline-banner offline-banner-rojo";
+        banner.innerHTML = `🔌 Sin conexión — trabajando en este dispositivo${pendientes ? `. Hay <b>${pendientes}</b> cambio(s) esperando para subirse.` : "."}`;
+    } else if (pendientes) {
+        banner.style.display = "flex";
+        banner.className = "offline-banner offline-banner-amarillo";
+        banner.innerHTML = `☁️ Hay <b>${pendientes}</b> cambio(s) pendientes de subir <button class="btn-chico" style="margin-left:8px;" onclick="sincronizarPendientes()">Sincronizar ahora</button>`;
+    } else {
+        banner.style.display = "none";
+    }
+}
+
+let sincronizandoAhora = false;
+async function sincronizarPendientes() {
+    if (sincronizandoAhora || !navigator.onLine) return;
+    let cola = colaSync();
+    if (!cola.length) return;
+    sincronizandoAhora = true;
+    mostrarEstadoSync(`Sincronizando ${cola.length} cambio(s) pendiente(s)...`, "cargando");
+
+    let quedaron = [];
+    for (let op of cola) {
+        try {
+            let error = null;
+            if (op.tipo === "crear_inspeccion") ({ error } = await sb.from("inspecciones").insert(op.fila));
+            else if (op.tipo === "editar_inspeccion") ({ error } = await sb.from("inspecciones").update(op.fila).eq("id", op.id));
+            else if (op.tipo === "eliminar_inspeccion") ({ error } = await sb.from("inspecciones").delete().eq("id", op.id));
+            else if (op.tipo === "bitacora") ({ error } = await sb.from("bitacora").insert(op.fila));
+            if (error) throw error;
+            if (op.tipo === "crear_inspeccion") {
+                let insp = inspecciones.find(i => i.id === op.id);
+                if (insp) insp._pendienteSync = false;
+            }
+        } catch(e) {
+            quedaron.push(op); // se reintenta en el próximo intento de sincronización
+        }
+    }
+    guardarColaSync(quedaron);
+    guardarCacheOffline();
+    sincronizandoAhora = false;
+
+    if (quedaron.length === 0) {
+        mostrarEstadoSync("Todo sincronizado ✅", "ok");
+    } else {
+        mostrarEstadoSync(`${quedaron.length} cambio(s) no se pudieron subir todavía, se reintenta más tarde`, "error");
+    }
+    let panelHist = document.getElementById("panelHistorial");
+    if (panelHist && panelHist.classList.contains("active")) renderHistorial();
+}
+
+window.addEventListener("online", () => { mostrarEstadoSync("Conexión recuperada, sincronizando...", "ok"); actualizarIndicadorOffline(); sincronizarPendientes(); });
+window.addEventListener("offline", () => { mostrarEstadoSync("Sin conexión — ahora se está trabajando en este dispositivo", "error"); actualizarIndicadorOffline(); });
+setInterval(() => { if (navigator.onLine) sincronizarPendientes(); }, 30000);
+
 window.addEventListener("offline", () => mostrarEstadoSync("Sin conexión a internet — lo que hagas ahora no se guardará hasta que vuelva la señal", "error"));
 window.addEventListener("online", () => mostrarEstadoSync("Conexión recuperada", "ok"));
 
@@ -4352,6 +4430,7 @@ function entrarAlApp() {
     let miPerfil = perfiles[sesionActual.usuario] || {};
     document.body.classList.toggle("tema-oscuro", miPerfil.tema === "oscuro");
     document.getElementById("tabBtnInicio").style.display = esAuditor() ? "none" : "inline-block";
+    actualizarIndicadorOffline();
 
     // Rol "solo campo": únicamente Empezar + Historial (+ Detalle al pulsar Ver).
     let soloEjecucion = typeof usuarioActivo !== "undefined" && usuarioActivo && usuarioActivo.rol === "colaborador_campo";
@@ -4510,36 +4589,70 @@ function mapearInspeccionDesdeSupabase(row) {
 
 async function cargarDatosInspeccionesDesdeSupabase() {
     mostrarEstadoSync("Cargando tus datos desde la nube...", "cargando");
-    let [rInsp, rCustom, rOverr, rOcult, rBit, rPerfil] = await Promise.all([
-        sb.from("inspecciones").select("*").order("fecha", { ascending:false }),
-        sb.from("tipos_custom").select("*"),
-        sb.from("tipos_overrides").select("*"),
-        sb.from("tipos_ocultos").select("*"),
-        sb.from("bitacora").select("*").order("fecha", { ascending:false }).limit(500),
-        sb.from("perfiles").select("*").eq("usuario_id", sesionActual.authId).maybeSingle()
-    ]);
+    try {
+        let [rInsp, rCustom, rOverr, rOcult, rBit, rPerfil] = await Promise.all([
+            sb.from("inspecciones").select("*").order("fecha", { ascending:false }),
+            sb.from("tipos_custom").select("*"),
+            sb.from("tipos_overrides").select("*"),
+            sb.from("tipos_ocultos").select("*"),
+            sb.from("bitacora").select("*").order("fecha", { ascending:false }).limit(500),
+            sb.from("perfiles").select("*").eq("usuario_id", sesionActual.authId).maybeSingle()
+        ]);
 
-    let huboError = [rInsp, rCustom, rOverr, rOcult, rBit].some(r => r.error);
-    [rInsp, rCustom, rOverr, rOcult, rBit].forEach(r => { if (r.error) console.error("Error cargando de Supabase:", r.error.message); });
+        let huboError = [rInsp, rCustom, rOverr, rOcult, rBit].some(r => r.error);
+        [rInsp, rCustom, rOverr, rOcult, rBit].forEach(r => { if (r.error) console.error("Error cargando de Supabase:", r.error.message); });
+        if (huboError) throw new Error("Falló alguna consulta a Supabase");
 
-    inspecciones = (rInsp.data || []).map(mapearInspeccionDesdeSupabase);
-    tiposCustom = (rCustom.data || []).map(c => c.definicion);
-    overridesTipos = {};
-    (rOverr.data || []).forEach(o => { overridesTipos[o.tipo_id] = o.definicion; });
-    tiposIntegradosOcultos = (rOcult.data || []).map(o => o.tipo_id);
-    bitacora = (rBit.data || []).map(b => ({ fecha:b.fecha, usuario:b.usuario, accion:b.accion, detalle:b.detalle }));
+        inspecciones = (rInsp.data || []).map(mapearInspeccionDesdeSupabase);
+        tiposCustom = (rCustom.data || []).map(c => c.definicion);
+        overridesTipos = {};
+        (rOverr.data || []).forEach(o => { overridesTipos[o.tipo_id] = o.definicion; });
+        tiposIntegradosOcultos = (rOcult.data || []).map(o => o.tipo_id);
+        bitacora = (rBit.data || []).map(b => ({ fecha:b.fecha, usuario:b.usuario, accion:b.accion, detalle:b.detalle }));
 
-    perfiles = {};
-    if (rPerfil.data) perfiles[sesionActual.usuario] = { tema: rPerfil.data.tema, foto: rPerfil.data.foto_url };
+        perfiles = {};
+        if (rPerfil.data) perfiles[sesionActual.usuario] = { tema: rPerfil.data.tema, foto: rPerfil.data.foto_url };
 
-    mostrarEstadoSync(huboError ? "Hubo un problema cargando algunos datos — revisa tu conexión o el esquema de Supabase" : "Datos sincronizados", huboError ? "error" : "ok");
+        mostrarEstadoSync("Datos sincronizados", "ok");
+        guardarCacheOffline();
+    } catch (e) {
+        // Sin conexión (u otro problema) al momento de entrar: se usa lo último guardado en
+        // este dispositivo, para que el trabajo de campo pueda seguir de todos modos.
+        let cache = cargarCacheOffline();
+        if (cache) {
+            inspecciones = cache.inspecciones || [];
+            tiposCustom = cache.tiposCustom || [];
+            overridesTipos = cache.overridesTipos || {};
+            tiposIntegradosOcultos = cache.tiposIntegradosOcultos || [];
+            bitacora = cache.bitacora || [];
+            perfiles = perfiles || {};
+            mostrarEstadoSync("Sin conexión: trabajando con lo último guardado en este dispositivo", "error");
+        } else {
+            inspecciones = []; tiposCustom = []; overridesTipos = {}; tiposIntegradosOcultos = []; bitacora = []; perfiles = {};
+            mostrarEstadoSync("Sin conexión y sin datos guardados todavía en este dispositivo", "error");
+        }
+    }
+
+    // Vuelve a incluir cualquier inspección creada/editada en este dispositivo que
+    // todavía no se ha podido subir, para que no "desaparezca" al recargar la página.
+    colaSync().filter(op => op.tipo === "crear_inspeccion").forEach(op => {
+        if (!inspecciones.some(i => i.id === op.id)) {
+            inspecciones.push({ ...mapearInspeccionDesdeSupabase(op.fila), _pendienteSync: true });
+        }
+    });
+    actualizarIndicadorOffline();
 }
 
 async function registrarBitacora(accion, detalle) {
     let entrada = { fecha: new Date().toISOString(), usuario: sesionActual ? sesionActual.nombre : "—", accion, detalle };
     bitacora.push(entrada);
-    let { error } = await sb.from("bitacora").insert({ usuario: entrada.usuario, accion, detalle, fecha: entrada.fecha });
-    if (error) { console.error("No se pudo registrar en la bitácora de Supabase:", error.message); mostrarEstadoSync("La bitácora no se pudo guardar en la nube", "error"); }
+    let filaBitacora = { usuario: entrada.usuario, accion, detalle, fecha: entrada.fecha };
+    if (navigator.onLine) {
+        let { error } = await sb.from("bitacora").insert(filaBitacora);
+        if (error) encolarOperacion({ tipo: "bitacora", fila: filaBitacora });
+    } else {
+        encolarOperacion({ tipo: "bitacora", fila: filaBitacora });
+    }
     let panel = document.getElementById("panelBitacora");
     if (panel && panel.classList.contains("active")) renderBitacora();
 }
@@ -5080,6 +5193,7 @@ function iniciarNuevaInspeccion(empresa, tipoId, insertarFilaVacia) {
     let tipo = tipoPorId(tipoId);
     if (!tipo) return;
     inspeccionActual = {
+        id: (crypto.randomUUID ? crypto.randomUUID() : "local-" + Date.now() + "-" + Math.random().toString(36).slice(2)),
         empresa, tipoId, nave:"", realizadoPor:"", fecha: new Date().toISOString().slice(0,10),
         horaInicio:"", lugarInicio:"", observaciones:""
     };
@@ -5439,9 +5553,9 @@ async function guardarInspeccion() {
 
     let btnGuardar = document.getElementById("btnGuardarInspeccion");
     if (btnGuardar) { btnGuardar.disabled = true; btnGuardar.innerText = "Guardando..."; }
-    mostrarEstadoSync("Guardando inspección en la nube...", "cargando");
 
     let filaSupabase = {
+        id: inspeccionActual.id,
         tipo_id: inspeccionActual.tipoId, empresa: inspeccionActual.empresa, nave: inspeccionActual.nave,
         realizado_por: inspeccionActual.realizadoPor, fecha: inspeccionActual.fecha, hora_inicio: inspeccionActual.horaInicio,
         lugar_inicio: inspeccionActual.lugarInicio, observaciones: inspeccionActual.observaciones,
@@ -5452,27 +5566,64 @@ async function guardarInspeccion() {
     if (inspeccionEditandoId) {
         let idx = inspecciones.findIndex(i => i.id === inspeccionEditandoId);
         let anterior = inspecciones[idx];
-        let { error } = await sb.from("inspecciones").update(filaSupabase).eq("id", inspeccionEditandoId);
-        if (btnGuardar) { btnGuardar.disabled = false; btnGuardar.innerText = "💾 Guardar inspección"; }
-        if (error) { mostrarEstadoSync("No se pudo guardar: " + error.message, "error"); alert("No se pudo guardar en Supabase: " + error.message); return; }
-        mostrarEstadoSync("Inspección actualizada en la nube", "ok");
         inspeccionActual.id = inspeccionEditandoId;
         inspeccionActual.creadoPorUsuario = anterior.creadoPorUsuario; // se conserva la cuenta original que la creó
+        inspeccionActual.creadaEn = anterior.creadaEn;
+
+        if (anterior._pendienteSync) {
+            // Todavía ni siquiera se subió por primera vez: solo se actualiza en la cola.
+            inspeccionActual._pendienteSync = true;
+            let cola = colaSync();
+            let op = cola.find(o => o.tipo === "crear_inspeccion" && o.id === inspeccionEditandoId);
+            if (op) op.fila = { ...filaSupabase, creado_por_usuario: anterior.creadoPorUsuario };
+            guardarColaSync(cola);
+            mostrarEstadoSync("Cambios guardados en este dispositivo (todavía no se ha subido nunca)", "ok");
+        } else if (navigator.onLine) {
+            mostrarEstadoSync("Guardando inspección en la nube...", "cargando");
+            let { error } = await sb.from("inspecciones").update(filaSupabase).eq("id", inspeccionEditandoId);
+            if (error) {
+                encolarOperacion({ tipo: "editar_inspeccion", id: inspeccionEditandoId, fila: filaSupabase });
+                inspeccionActual._pendienteSync = anterior._pendienteSync;
+                mostrarEstadoSync("No se pudo subir ahora: se guardó en este dispositivo y se reintentará", "error");
+            } else {
+                mostrarEstadoSync("Inspección actualizada en la nube", "ok");
+            }
+        } else {
+            encolarOperacion({ tipo: "editar_inspeccion", id: inspeccionEditandoId, fila: filaSupabase });
+            mostrarEstadoSync("Sin conexión: cambios guardados en este dispositivo, se subirán solos", "error");
+        }
+
+        if (btnGuardar) { btnGuardar.disabled = false; btnGuardar.innerText = "💾 Guardar inspección"; }
         inspecciones[idx] = inspeccionActual;
         registrarBitacora("Edición", `${tipo.nombre} — ${inspeccionActual.empresa} · ${inspeccionActual.nave} · ${inspeccionActual.fecha} (${anterior.resumen.pct.toFixed(0)}% → ${inspeccionActual.resumen.pct.toFixed(0)}%)`);
         inspeccionEditandoId = null;
         alert(`Inspección actualizada — ${inspeccionActual.resumen.pct.toFixed(0)}% (${inspeccionActual.resumen.nivel})`);
     } else {
-        let { data, error } = await sb.from("inspecciones").insert({ ...filaSupabase, creado_por_usuario: sesionActual.usuario }).select().single();
-        if (btnGuardar) { btnGuardar.disabled = false; btnGuardar.innerText = "💾 Guardar inspección"; }
-        if (error) { mostrarEstadoSync("No se pudo guardar: " + error.message, "error"); alert("No se pudo guardar en Supabase: " + error.message); return; }
-        mostrarEstadoSync("Inspección guardada en la nube", "ok");
-        inspeccionActual.id = data.id;
-        inspeccionActual.creadaEn = data.creado_en;
+        inspeccionActual.creadaEn = new Date().toISOString();
         inspeccionActual.creadoPorUsuario = sesionActual.usuario;
+        let filaConCuenta = { ...filaSupabase, creado_por_usuario: sesionActual.usuario };
+
+        if (navigator.onLine) {
+            mostrarEstadoSync("Guardando inspección en la nube...", "cargando");
+            let { error } = await sb.from("inspecciones").insert(filaConCuenta);
+            if (error) {
+                inspeccionActual._pendienteSync = true;
+                encolarOperacion({ tipo: "crear_inspeccion", id: inspeccionActual.id, fila: filaConCuenta });
+                mostrarEstadoSync("No se pudo subir ahora: se guardó en este dispositivo y se reintentará", "error");
+            } else {
+                mostrarEstadoSync("Inspección guardada en la nube", "ok");
+            }
+        } else {
+            inspeccionActual._pendienteSync = true;
+            encolarOperacion({ tipo: "crear_inspeccion", id: inspeccionActual.id, fila: filaConCuenta });
+            mostrarEstadoSync("Sin conexión: inspección guardada en este dispositivo, se subirá sola", "error");
+        }
+
+        if (btnGuardar) { btnGuardar.disabled = false; btnGuardar.innerText = "💾 Guardar inspección"; }
         inspecciones.push(inspeccionActual);
+        guardarCacheOffline();
         registrarBitacora("Creación", `${tipo.nombre} — ${inspeccionActual.empresa} · ${inspeccionActual.nave} · ${inspeccionActual.fecha} (${inspeccionActual.resumen.pct.toFixed(0)}%, ${inspeccionActual.resumen.nivel})`);
-        alert(`Inspección guardada — ${inspeccionActual.resumen.pct.toFixed(0)}% (${inspeccionActual.resumen.nivel})`);
+        alert(`Inspección guardada${inspeccionActual._pendienteSync ? " en este dispositivo (pendiente de subir)" : ""} — ${inspeccionActual.resumen.pct.toFixed(0)}% (${inspeccionActual.resumen.nivel})`);
     }
 
     verDetalleInspeccion(inspeccionActual.id);
@@ -5565,7 +5716,7 @@ function renderHistorial() {
             <td>${insp.nave || "—"}</td>
             <td>${insp.realizadoPor || "—"}</td>
             <td>${insp.resumen.pct.toFixed(0)}%</td>
-            <td><span class="badge-nivel ${claseNivel(insp.resumen.nivel)}">${insp.resumen.nivel}</span></td>
+            <td><span class="badge-nivel ${claseNivel(insp.resumen.nivel)}">${insp.resumen.nivel}</span> ${insp._pendienteSync ? `<span class="badge-pendiente-sync">⏳ Pendiente</span>` : ""}</td>
             <td>
                 <button class="btn-chico" onclick="verDetalleInspeccion('${insp.id}')">Ver</button>
                 ${puedeGestionarInspeccion(insp) ? `<button class="btn-chico" onclick="editarInspeccion('${insp.id}')">Editar</button>
@@ -5765,11 +5916,27 @@ async function eliminarInspeccion(id) {
     if (!exigirGestionInspeccion(insp)) return;
     if (!confirm("¿Eliminar esta inspección? No se puede deshacer.")) return;
     let tipo = tipoPorId(insp.tipoId);
-    mostrarEstadoSync("Eliminando de la nube...", "cargando");
-    let { error } = await sb.from("inspecciones").delete().eq("id", id);
-    if (error) { mostrarEstadoSync("No se pudo eliminar: " + error.message, "error"); alert("No se pudo eliminar en Supabase: " + error.message); return; }
-    mostrarEstadoSync("Eliminado de la nube", "ok");
+
+    if (insp._pendienteSync) {
+        // Nunca llegó a subirse: se quita de este dispositivo y de la cola, sin tocar la red.
+        guardarColaSync(colaSync().filter(o => !(o.tipo === "crear_inspeccion" && o.id === id)));
+        mostrarEstadoSync("Eliminada de este dispositivo", "ok");
+    } else if (navigator.onLine) {
+        mostrarEstadoSync("Eliminando de la nube...", "cargando");
+        let { error } = await sb.from("inspecciones").delete().eq("id", id);
+        if (error) {
+            encolarOperacion({ tipo: "eliminar_inspeccion", id });
+            mostrarEstadoSync("No se pudo eliminar ahora: se hará en cuanto haya señal", "error");
+        } else {
+            mostrarEstadoSync("Eliminado de la nube", "ok");
+        }
+    } else {
+        encolarOperacion({ tipo: "eliminar_inspeccion", id });
+        mostrarEstadoSync("Sin conexión: se eliminará en cuanto vuelva la señal", "error");
+    }
+
     inspecciones = inspecciones.filter(i => i.id !== id);
+    guardarCacheOffline();
     registrarBitacora("Eliminación", `${tipo ? tipo.nombre : insp.tipoId} — ${insp.empresa} · ${insp.nave} · ${insp.fecha} (era ${insp.resumen.pct.toFixed(0)}%, ${insp.resumen.nivel})`);
     renderHistorial();
 }
