@@ -10,6 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
 <style>
 :root {
@@ -3978,6 +3979,62 @@ const INSP_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ
 // importar el orden en que se entra a cada uno.
 const sb = _sb;
 
+/* ==================== ALERTAS DE PUNTAJE BAJO ====================
+   Correo: se manda solo con EmailJS (no necesita servidor propio). Para activarlo:
+     1) Crea una cuenta gratis en https://www.emailjs.com y conecta tu correo (Gmail/Outlook).
+     2) Crea un "Email Template" con estas variables: {{to_email}}, {{empresa}}, {{nave}},
+        {{tipo_inspeccion}}, {{fecha}}, {{puntaje}}, {{nivel}}, {{realizado_por}}, {{hallazgos}}.
+     3) Reemplaza los 3 valores de abajo (Service ID, Template ID, Public Key) por los tuyos.
+   Mientras EMAILJS_SERVICE_ID diga "PON_TU_SERVICE_ID", las alertas por correo se muestran
+   en consola pero NO se envían de verdad (para no fallar en silencio ni gastar cuota).
+
+   WhatsApp: no existe forma segura de mandarlo 100% automático desde un archivo HTML (la
+   API oficial de WhatsApp debe llamarse desde un servidor, nunca desde el navegador). En
+   su lugar, se abre un enlace de WhatsApp con el mensaje ya escrito, listo para mandar con
+   un toque — cero costo, cero riesgo de bloqueo. */
+const EMAILJS_SERVICE_ID = "service_iu42dqa";
+const EMAILJS_TEMPLATE_ID = "template_cgxawzg";
+const EMAILJS_PUBLIC_KEY = "dVJrLAacHRs2NNQdm";
+const CORREO_ALERTA_PUNTAJE_BAJO = "cumplimientoymc@notions.com.do";
+const TELEFONO_ALERTA_WHATSAPP = "18297453235"; // formato: código de país + número, sin "+" ni espacios
+
+if (typeof emailjs !== "undefined" && EMAILJS_PUBLIC_KEY !== "PON_TU_PUBLIC_KEY") {
+    emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+}
+
+function enviarAlertaCorreoPuntajeBajo(insp, tipo) {
+    let datos = {
+        to_email: CORREO_ALERTA_PUNTAJE_BAJO,
+        empresa: insp.empresa, nave: insp.nave, tipo_inspeccion: tipo.nombre,
+        fecha: insp.fecha, puntaje: insp.resumen.pct.toFixed(0) + "%", nivel: insp.resumen.nivel,
+        realizado_por: insp.realizadoPor,
+        hallazgos: (insp.resumen.itemsCorregir || []).map(h => "- " + h.nombre + (h.especifique ? ` (${h.especifique})` : "")).join("\n") || "Sin detalle adicional."
+    };
+    if (typeof emailjs === "undefined" || EMAILJS_SERVICE_ID === "PON_TU_SERVICE_ID") {
+        console.warn("Alerta de puntaje bajo (correo NO configurado todavía):", datos);
+        return;
+    }
+    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, datos)
+        .then(() => mostrarEstadoSync("Alerta enviada por correo a " + CORREO_ALERTA_PUNTAJE_BAJO, "ok"))
+        .catch(err => { console.error("No se pudo enviar la alerta por correo:", err); mostrarEstadoSync("No se pudo enviar la alerta por correo", "error"); });
+}
+
+function abrirAlertaWhatsApp(insp, tipo) {
+    let msg = `⚠️ Alerta: inspección con puntaje bajo\n`
+        + `Empresa: ${insp.empresa}\nNave: ${insp.nave}\nInspección: ${tipo.nombre}\n`
+        + `Fecha: ${insp.fecha}\nPuntaje: ${insp.resumen.pct.toFixed(0)}% (${insp.resumen.nivel})\n`
+        + `Realizado por: ${insp.realizadoPor}`;
+    window.open(`https://wa.me/${TELEFONO_ALERTA_WHATSAPP}?text=${encodeURIComponent(msg)}`, "_blank");
+}
+
+function evaluarAlertaPuntajeBajo(insp, tipo) {
+    if (insp.resumen.nivel !== "Bajo") return;
+    enviarAlertaCorreoPuntajeBajo(insp, tipo);
+    if (confirm(`⚠️ Esta inspección salió con puntaje BAJO (${insp.resumen.pct.toFixed(0)}%).\nYa se envió una alerta por correo.\n\n¿Quieres también avisar por WhatsApp ahora mismo?`)) {
+        abrirAlertaWhatsApp(insp, tipo);
+    }
+}
+
 /* ---- Indicador de sincronización: avisa mientras guarda, si quedó bien, o si algo falló ---- */
 let syncTimeoutId = null;
 function mostrarEstadoSync(mensaje, tipo) {
@@ -5624,6 +5681,7 @@ async function guardarInspeccion() {
         guardarCacheOffline();
         registrarBitacora("Creación", `${tipo.nombre} — ${inspeccionActual.empresa} · ${inspeccionActual.nave} · ${inspeccionActual.fecha} (${inspeccionActual.resumen.pct.toFixed(0)}%, ${inspeccionActual.resumen.nivel})`);
         alert(`Inspección guardada${inspeccionActual._pendienteSync ? " en este dispositivo (pendiente de subir)" : ""} — ${inspeccionActual.resumen.pct.toFixed(0)}% (${inspeccionActual.resumen.nivel})`);
+        evaluarAlertaPuntajeBajo(inspeccionActual, tipo);
     }
 
     verDetalleInspeccion(inspeccionActual.id);
@@ -5981,6 +6039,7 @@ function verDetalleInspeccion(id) {
             <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:6px;">
                 <span class="badge-nivel ${claseNivel(r.nivel)}" style="font-size:13px; padding:5px 14px;">${r.nivel}</span>
                 <span style="font-size:13px; color:var(--text-muted);">Puntaje: ${r.puntaje.toFixed(1)} / ${r.maxPuntaje.toFixed(0)} · ${r.ok} Ok · ${r.corregir} a corregir${r.pendientes ? " · " + r.pendientes + " sin marcar" : ""}</span>
+                ${r.nivel === "Bajo" ? `<button class="btn-chico rojo no-print" onclick="evaluarAlertaPuntajeBajo(inspecciones.find(i=>i.id==='${insp.id}'), tipoPorId('${insp.tipoId}'))">⚠️ Reenviar alerta</button>` : ""}
             </div>
         </div>
 
