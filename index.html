@@ -1179,25 +1179,7 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
     <!-- ============ EMPEZAR: elegir empresa e inspección ============ -->
     <div id="panelInicio" class="tab-panel active">
         <h2 class="panel-title">🏢 ¿Qué inspección vas a hacer?</h2>
-        <p class="panel-desc">Elige primero la empresa y luego el tipo de inspección para empezar a llenarla.</p>
-
-        <div class="insp-card">
-            <div class="form-grid" style="margin-bottom:6px;">
-                <div>
-                    <label>Empresa</label>
-                    <select id="fInicioEmpresa" onchange="poblarSelectorTipoPorEmpresa()">
-                        <option value="">Selecciona una empresa...</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Inspección</label>
-                    <select id="fInicioTipo">
-                        <option value="">Primero elige una empresa</option>
-                    </select>
-                </div>
-            </div>
-            <button class="btn-primario" style="margin-top:10px;" onclick="empezarInspeccionDesdeInicio()">Empezar inspección →</button>
-        </div>
+        <p class="panel-desc">Elige la empresa y pulsa la inspección que quieres llenar.</p>
 
         <div id="resumenTiposPorEmpresa"></div>
     </div>
@@ -4562,38 +4544,42 @@ function mostrarTab(id) {
 }
 
 /* ==================== EMPEZAR: elegir empresa + tipo ==================== */
-function renderInicio() {
-    let selEmpresa = document.getElementById("fInicioEmpresa");
-    if (selEmpresa.options.length <= 1) {
-        selEmpresa.innerHTML = `<option value="">Selecciona una empresa...</option>` + EMPRESAS.map(e => `<option value="${e}">${e}</option>`).join("");
-    }
-    poblarSelectorTipoPorEmpresa();
+function colorEmpresa(emp) {
+    if (emp === "Notions Dominicana") return "var(--empresa-notions)";
+    if (emp === "Global Technology Group") return "var(--empresa-gtg)";
+    if (emp === "Now Logistics") return "var(--empresa-now)";
+    return "var(--accent-blue)";
+}
 
+function renderInicio() {
     let resumen = document.getElementById("resumenTiposPorEmpresa");
     resumen.innerHTML = EMPRESAS.map(emp => {
         let tipos = tiposVisibles().filter(t => t.empresas.includes(emp));
-        return `<div class="insp-card"><h3 style="margin-top:0; font-size:14px;">${emp}</h3>
+        let color = colorEmpresa(emp);
+        return `<div class="insp-card" style="margin-bottom:16px;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+                <span style="width:10px; height:10px; border-radius:50%; background:${color}; flex-shrink:0;"></span>
+                <h3 style="margin:0; font-size:15px; font-family:var(--font-display);">${emp}</h3>
+                <span style="margin-left:auto; font-size:11.5px; color:var(--text-muted); font-weight:600;">${tipos.length} inspección${tipos.length === 1 ? "" : "es"} disponible${tipos.length === 1 ? "" : "s"}</span>
+            </div>
             ${tipos.length === 0
-                ? `<p style="font-size:13px; color:var(--text-muted);">Todavía no hay inspecciones cargadas para esta empresa. Agrégalas en "⚙️ Tipos de Inspección".</p>`
-                : `<ul style="font-size:13px; line-height:1.8; margin:0; padding-left:18px;">${tipos.map(t => `<li>${t.nombre} <span style="color:var(--text-muted);">(${t.modo === "muestreo" ? "muestreo por filas" : t.checklist.length + " elementos"})</span></li>`).join("")}</ul>`}
+                ? `<div class="catalogo-vacio">Todavía no hay inspecciones cargadas para esta empresa. Agrégalas en "⚙️ Tipos de Inspección".</div>`
+                : `<div class="catalogo-grid">${tipos.map(t => `
+                <div class="tipo-card" style="cursor:pointer;" onclick="iniciarInspeccionRapida('${emp}','${t.id}')">
+                    <div class="tipo-card-top">
+                        <div class="tipo-card-icono" style="background:${color}1a; color:${color};">📋</div>
+                        <div>
+                            <div class="tipo-card-nombre">${t.nombre}</div>
+                            ${t.documento ? `<div class="tipo-card-doc">${t.documento}</div>` : ""}
+                        </div>
+                    </div>
+                    <div class="tipo-card-detalle">${t.modo === "muestreo" ? "Muestreo por filas" : t.checklist.length + " elementos a revisar"}</div>
+                </div>`).join("")}</div>`}
         </div>`;
     }).join("");
 }
 
-function poblarSelectorTipoPorEmpresa() {
-    let empresa = document.getElementById("fInicioEmpresa").value;
-    let selTipo = document.getElementById("fInicioTipo");
-    if (!empresa) { selTipo.innerHTML = `<option value="">Primero elige una empresa</option>`; return; }
-    let tipos = tiposVisibles().filter(t => t.empresas.includes(empresa));
-    if (tipos.length === 0) { selTipo.innerHTML = `<option value="">Sin inspecciones cargadas para esta empresa</option>`; return; }
-    selTipo.innerHTML = `<option value="">Selecciona la inspección...</option>` + tipos.map(t => `<option value="${t.id}">${t.nombre}${t.documento ? " (" + t.documento + ")" : ""}</option>`).join("");
-}
-
-function empezarInspeccionDesdeInicio() {
-    let empresa = document.getElementById("fInicioEmpresa").value;
-    let tipoId = document.getElementById("fInicioTipo").value;
-    if (!empresa) { alert("Elige una empresa."); return; }
-    if (!tipoId) { alert("Elige qué inspección vas a hacer."); return; }
+function iniciarInspeccionRapida(empresa, tipoId) {
     iniciarNuevaInspeccion(empresa, tipoId);
     mostrarTab("nueva");
 }
