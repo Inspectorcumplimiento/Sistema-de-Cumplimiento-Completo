@@ -1438,6 +1438,15 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
             <select id="filtroHistorialEmpresa" onchange="renderHistorial()"><option value="todas">Todas las empresas</option></select>
             <label>Inspección:</label>
             <select id="filtroHistorialTipo" onchange="renderHistorial()"><option value="todos">Todos los tipos</option></select>
+            <label>Cuenta:</label>
+            <select id="filtroHistorialCuenta" onchange="renderHistorial()">
+                <option value="todas">Todas las cuentas</option>
+                <option value="superadmin">Super Administrador</option>
+                <option value="joan">Joan Garcia</option>
+                <option value="jhoan">Jhoan Hilario</option>
+                <option value="victor">Victor Torres</option>
+                <option value="colaborador">Colaborador / Pasante</option>
+            </select>
             <label>Desde:</label>
             <input type="date" id="filtroHistorialDesde" onchange="renderHistorial()">
             <label>Hasta:</label>
@@ -2157,7 +2166,8 @@ let USUARIOS_VALIDOS = {
     "superadmin": { rol: "admin", nombre: "Super Administrador", posicion: "ADMINISTRADOR" },
     "joan": { rol: "empleado", nombre: "Joan Garcia", posicion: "INSPECTOR" },
     "jhoan": { rol: "empleado", nombre: "Jhoan Hilario", posicion: "COORDINADOR" },
-    "victor": { rol: "supervisor", nombre: "Victor Torres", posicion: "GERENTE" }
+    "victor": { rol: "supervisor", nombre: "Victor Torres", posicion: "GERENTE" },
+    "colaborador": { rol: "colaborador_campo", nombre: "Colaborador / Pasante", posicion: "PASANTE" }
 };
 migrarPosicionesUsuarios();
 
@@ -2289,7 +2299,7 @@ function verificarSesion() {
         rotarSabiasQue();
 
         let puedeSupervisar = usuarioActivo.rol === "admin" || usuarioActivo.rol === "supervisor";
-        document.getElementById("admin-view-selector").style.display = puedeSupervisar ? "flex" : "none";
+        document.getElementById("admin-view-selector").style.display = "flex";
         document.getElementById("welcome-title").innerText = puedeSupervisar ? "Dashboard Global de Control" : `Dashboard - ${usuarioActivo.nombre}`;
         
         if(!document.getElementById("filtroCalendarioDia").value){
@@ -2335,9 +2345,13 @@ function configurarSelectoresPorRol() {
     if (asignaJor) asignaJor.innerHTML = optionsForm + `<option value="equipo">👥 Equipo (Joan, Jhoan y Victor)</option>`;
 }
 
+// Trazabilidad de actividades: TODOS los roles que llegan al dashboard (admin, supervisor,
+// empleado) pueden VER el historial completo de todos ("público" para consulta), pero no
+// pueden editar/borrar registros ajenos (eso lo sigue bloqueando "deshabilitarControl" en
+// render(), que solo permite tocar lo propio salvo que seas admin). El colaborador de campo
+// nunca llega hasta aquí: su sesión salta directo a Inspecciones y no ve este dashboard.
 function getFiltroUsuario() {
-    let esSupervisorOAdmin = usuarioActivo.rol === "admin" || usuarioActivo.rol === "supervisor";
-    return esSupervisorOAdmin ? document.getElementById("filtroEmpleado").value : usuarioActivo.username;
+    return document.getElementById("filtroEmpleado").value;
 }
 
 function ejecutarFiltroGlobal() {
@@ -4470,7 +4484,8 @@ function mapearInspeccionDesdeSupabase(row) {
         realizadoPor: row.realizado_por, fecha: row.fecha, horaInicio: row.hora_inicio,
         lugarInicio: row.lugar_inicio, observaciones: row.observaciones,
         campoAdicional: row.campo_adicional, items: row.items || null, filas: row.filas || null,
-        resumen: row.resumen, creadaEn: row.creado_en, creadoPor: row.creado_por
+        resumen: row.resumen, creadaEn: row.creado_en, creadoPor: row.creado_por,
+        creadoPorUsuario: row.creado_por_usuario || ""
     };
 }
 
@@ -5406,17 +5421,19 @@ async function guardarInspeccion() {
         if (error) { mostrarEstadoSync("No se pudo guardar: " + error.message, "error"); alert("No se pudo guardar en Supabase: " + error.message); return; }
         mostrarEstadoSync("Inspección actualizada en la nube", "ok");
         inspeccionActual.id = inspeccionEditandoId;
+        inspeccionActual.creadoPorUsuario = anterior.creadoPorUsuario; // se conserva la cuenta original que la creó
         inspecciones[idx] = inspeccionActual;
         registrarBitacora("Edición", `${tipo.nombre} — ${inspeccionActual.empresa} · ${inspeccionActual.nave} · ${inspeccionActual.fecha} (${anterior.resumen.pct.toFixed(0)}% → ${inspeccionActual.resumen.pct.toFixed(0)}%)`);
         inspeccionEditandoId = null;
         alert(`Inspección actualizada — ${inspeccionActual.resumen.pct.toFixed(0)}% (${inspeccionActual.resumen.nivel})`);
     } else {
-        let { data, error } = await sb.from("inspecciones").insert(filaSupabase).select().single();
+        let { data, error } = await sb.from("inspecciones").insert({ ...filaSupabase, creado_por_usuario: sesionActual.usuario }).select().single();
         if (btnGuardar) { btnGuardar.disabled = false; btnGuardar.innerText = "💾 Guardar inspección"; }
         if (error) { mostrarEstadoSync("No se pudo guardar: " + error.message, "error"); alert("No se pudo guardar en Supabase: " + error.message); return; }
         mostrarEstadoSync("Inspección guardada en la nube", "ok");
         inspeccionActual.id = data.id;
         inspeccionActual.creadaEn = data.creado_en;
+        inspeccionActual.creadoPorUsuario = sesionActual.usuario;
         inspecciones.push(inspeccionActual);
         registrarBitacora("Creación", `${tipo.nombre} — ${inspeccionActual.empresa} · ${inspeccionActual.nave} · ${inspeccionActual.fecha} (${inspeccionActual.resumen.pct.toFixed(0)}%, ${inspeccionActual.resumen.nivel})`);
         alert(`Inspección guardada — ${inspeccionActual.resumen.pct.toFixed(0)}% (${inspeccionActual.resumen.nivel})`);
@@ -5482,11 +5499,13 @@ function poblarFiltrosHistorial() {
 function inspeccionesFiltradasHistorial() {
     let filtroEmp = document.getElementById("filtroHistorialEmpresa").value;
     let filtroTipo = document.getElementById("filtroHistorialTipo").value;
+    let filtroCuenta = document.getElementById("filtroHistorialCuenta").value;
     let desde = document.getElementById("filtroHistorialDesde").value;
     let hasta = document.getElementById("filtroHistorialHasta").value;
     return inspecciones.filter(i =>
         (filtroEmp === "todas" || i.empresa === filtroEmp) &&
         (filtroTipo === "todos" || i.tipoId === filtroTipo) &&
+        (filtroCuenta === "todas" || i.creadoPorUsuario === filtroCuenta) &&
         (!desde || (i.fecha || "") >= desde) &&
         (!hasta || (i.fecha || "") <= hasta)
     ).slice().sort((a,b) => (b.fecha||"").localeCompare(a.fecha||""));
