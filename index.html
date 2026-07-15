@@ -2299,7 +2299,9 @@ function verificarSesion() {
         rotarSabiasQue();
 
         let puedeSupervisar = usuarioActivo.rol === "admin" || usuarioActivo.rol === "supervisor";
-        document.getElementById("admin-view-selector").style.display = "flex";
+        // Solo Victor (supervisor) y el Super Admin manejan la vista global del Dashboard.
+        // Joan y Jhoan (empleados) no ven el selector "Ver datos de": su Dashboard es personal.
+        document.getElementById("admin-view-selector").style.display = puedeSupervisar ? "flex" : "none";
         document.getElementById("welcome-title").innerText = puedeSupervisar ? "Dashboard Global de Control" : `Dashboard - ${usuarioActivo.nombre}`;
         
         if(!document.getElementById("filtroCalendarioDia").value){
@@ -2338,11 +2340,22 @@ function configurarSelectoresPorRol() {
         optionsForm += `<option value="superadmin">Super Administrador</option>`;
     }
 
-    filtroSelect.innerHTML = optionsFiltro;
-    asignaAct.innerHTML = optionsForm;
+    // Joan y Jhoan (rol "empleado"): el Dashboard principal (Actividades) es personal,
+    // no pueden ver ni filtrar el trabajo de los demás. Solo quedan bloqueados a su
+    // propio usuario (las tareas de "Equipo" siempre se les muestran aparte, en render()).
+    // Victor (supervisor) y el Super Admin sí conservan la vista global completa.
+    if (usuarioActivo.rol === "empleado") {
+        filtroSelect.innerHTML = `<option value="${usuarioActivo.username}">${usuarioActivo.nombre} (tú)</option>`;
+    } else {
+        filtroSelect.innerHTML = optionsFiltro;
+    }
+
+    let optionsFormConEquipo = optionsForm + `<option value="equipo">👥 Equipo (Joan, Jhoan y Victor)</option>`;
+
+    asignaAct.innerHTML = optionsFormConEquipo;
     asignaAsoc.innerHTML = optionsForm;
     if (asignaInd) asignaInd.innerHTML = optionsForm;
-    if (asignaJor) asignaJor.innerHTML = optionsForm + `<option value="equipo">👥 Equipo (Joan, Jhoan y Victor)</option>`;
+    if (asignaJor) asignaJor.innerHTML = optionsFormConEquipo;
 }
 
 // Trazabilidad de actividades: TODOS los roles que llegan al dashboard (admin, supervisor,
@@ -3357,6 +3370,10 @@ function render(){
     let filtro = getFiltroUsuario();
     let filtroDia = document.getElementById("filtroCalendarioDia").value;
     let hoyStr = obtenerFechaHoyLocal();
+    // Joan y Jhoan (rol "empleado") solo ven su propio trabajo en este Dashboard,
+    // salvo las tareas asignadas explícitamente a "Equipo" (visibles para todos).
+    // Victor (supervisor) y el Super Admin conservan la vista global con el filtro.
+    let restringidoPersonal = usuarioActivo.rol === "empleado";
 
     let indicadorDashboard = document.getElementById("dashboard-date-indicator");
     if(indicadorDashboard) {
@@ -3374,7 +3391,9 @@ function render(){
         if (usuarioActivo.rol === "supervisor" && a.usuario === "superadmin") return;
 
         // Reglas de visualización por filtro global del Dashboard
-        let pasaFiltroUsuario = (filtro === "todos" || a.usuario === filtro);
+        let pasaFiltroUsuario = restringidoPersonal
+            ? (a.usuario === usuarioActivo.username || a.usuario === "equipo")
+            : (filtro === "todos" || a.usuario === filtro);
         let coincideConFechaFiltro = (!filtroDia || a.fecha === filtroDia);
 
         if (pasaFiltroUsuario && coincideConFechaFiltro) {
@@ -3388,7 +3407,7 @@ function render(){
         
         // Bloqueo de seguridad si la tarea pertenece a otra persona y no se es admin
         let deshabilitarControl = (usuarioActivo.rol !== "admin" && a.usuario !== usuarioActivo.username) ? "disabled" : "";
-        let nombreDisplay = USUARIOS_VALIDOS[a.usuario] ? USUARIOS_VALIDOS[a.usuario].nombre : "Desconocido";
+        let nombreDisplay = a.usuario === "equipo" ? "👥 Equipo (Joan, Jhoan y Victor)" : (USUARIOS_VALIDOS[a.usuario] ? USUARIOS_VALIDOS[a.usuario].nombre : "Desconocido");
 
         // 1. Render de Tabla Operativa Diaria
         if (pasaFiltroUsuario && coincideConFechaFiltro) {
