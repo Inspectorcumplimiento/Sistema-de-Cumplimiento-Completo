@@ -1630,7 +1630,7 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
         <a id="menu-asociados" onclick="showSection('asociados')">🤝 Asociados de Negocios</a>
         <a id="menu-indicadores" onclick="showSection('indicadores')">📈 Indicadores</a>
         <a id="menu-jornadas" onclick="showSection('jornadas')">📅 Jornadas y Eventos</a>
-        <a id="menu-indicadores-pro" onclick="showSection('indicadores-pro')">📊 Sistema de Indicadores</a>
+        <a id="menu-indicadores-pro" onclick="abrirIndicadores()">📊 Sistema de Indicadores</a>
         <a id="menu-inspecciones" onclick="showSection('inspecciones')">🔍 Inspecciones</a>
         <a id="menu-configuracion" onclick="showSection('configuracion')">⚙️ Configuración</a>
         
@@ -3171,6 +3171,19 @@ function activarModoSoloIndicadores() {
     ["menu-inicio","menu-actividades","menu-reportes","menu-accidentabilidad","menu-inducciones","menu-asociados","menu-indicadores","menu-jornadas","menu-inspecciones","menu-configuracion"]
         .forEach(id => { let el = document.getElementById(id); if (el) el.style.display = "none"; });
     showSection("indicadores-pro");
+}
+
+// Abre la pestaña de Indicadores. Si quien está conectado en el sistema principal
+// es Victor, Joan o Jhoan, entra automáticamente al módulo con su cuenta real de
+// Indicadores (admin / supervisor con acceso total), sin pedir una segunda
+// contraseña. Cualquier otra persona ve la pantalla de login propia del módulo.
+function abrirIndicadores() {
+    showSection('indicadores-pro');
+    const MAPEO_SSO_INDICADORES = { "victor": "admin", "joan": "joan_garcia", "jhoan": "jhoan_hilario" };
+    let kpiKeyEsperado = usuarioActivo ? MAPEO_SSO_INDICADORES[usuarioActivo.username] : null;
+    if (kpiKeyEsperado && sessionStorage.getItem("kpi_sesion_activa") !== kpiKeyEsperado && typeof window.indLoginSSO === "function") {
+        window.indLoginSSO(usuarioActivo.username);
+    }
 }
 
 function verificarSesion() {
@@ -7670,6 +7683,26 @@ function cerrarSesion() {
     }
 }
 
+// Mapeo de usuarios del sistema principal -> su cuenta real dentro de este módulo.
+// Solo estos 3 pueden entrar sin contraseña (ya están autenticados en el sistema
+// principal); todos los demás siguen necesitando su usuario/clave de departamento.
+const MAPEO_SSO_PRINCIPAL = { "victor": "admin", "joan": "joan_garcia", "jhoan": "jhoan_hilario" };
+
+// Login automático (SSO) para Victor/Joan/Jhoan, invocado desde index.html cuando
+// esa persona ya está autenticada en el sistema principal. No valida contraseña
+// (la confianza viene de que el sistema principal ya la validó), pero sí deja
+// registrada en la bitácora la entrada, para que quede trazabilidad de que ese
+// acceso fue automático y de todo lo que haga después.
+async function indLoginSSO(mainUsername) {
+    let kpiKey = MAPEO_SSO_PRINCIPAL[mainUsername];
+    if (!kpiKey || !usuarios[kpiKey]) return false;
+    usuarioActivo = { username: kpiKey, ...usuarios[kpiKey] };
+    sessionStorage.setItem("kpi_sesion_activa", kpiKey);
+    entrarAlSistema();
+    registrarBitacora("acceso_directo", `Entró a Indicadores sin contraseña, ya autenticado en el sistema principal como @${mainUsername}.`);
+    return true;
+}
+
 // Verificación de credenciales de este módulo invocable desde el login principal
 // del sistema (index.html), sin depender de los inputs internos del módulo.
 async function indLoginPrograma(user, pass) {
@@ -8935,6 +8968,7 @@ document.getElementById("loginPass").addEventListener("keydown", e => { if (e.ke
 /* ---- Exposición controlada a window: SOLO las funciones invocadas desde
    atributos onclick/onchange en el HTML, que corren en el scope global.
    Todo lo demás permanece encapsulado dentro de este módulo. ---- */
+window.indLoginSSO = indLoginSSO;
 window.indLoginPrograma = indLoginPrograma;
 window.abrirModalEditarUsuario = abrirModalEditarUsuario;
 window.adminAgregarDepartamento = adminAgregarDepartamento;
