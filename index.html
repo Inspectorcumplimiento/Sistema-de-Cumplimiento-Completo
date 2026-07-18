@@ -1602,7 +1602,7 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
         <h2>🛡️ Control de Cumplimiento</h2>
         <p class="subtitle">Sistema de Monitoreo & Continuidad </p>
         <form id="loginForm" onsubmit="login(event)">
-            <input type="email" id="username" placeholder="Correo" required>
+            <input type="text" id="username" placeholder="Correo (o usuario de departamento para Indicadores)" required>
             <input type="password" id="password" placeholder="Contraseña" required>
             <button type="submit">Iniciar Sesión</button>
         </form>
@@ -3124,6 +3124,20 @@ async function login(e) {
     e.preventDefault();
     let email = document.getElementById("username").value.trim();
     let pass = document.getElementById("password").value;
+
+    // Si lo que escribió no parece un correo, es un usuario del módulo de
+    // Indicadores (departamento/supervisor/admin de ese módulo). Se valida
+    // contra esa lista y, si es correcto, entra directo a Indicadores
+    // solamente, sin tocar Supabase Auth ni el resto del sistema.
+    if (!email.includes("@")) {
+        if (typeof indLoginPrograma === "function" && await indLoginPrograma(email, pass)) {
+            activarModoSoloIndicadores();
+        } else {
+            alert("Usuario o contraseña incorrectos.");
+        }
+        return;
+    }
+
     const { data, error } = await _sb.auth.signInWithPassword({ email, password: pass });
     if (error) { alert("Correo o contraseña incorrectos."); return; }
     const username = data.user.email.split("@")[0].toLowerCase();
@@ -3141,8 +3155,22 @@ async function login(e) {
 async function logout() {
     await _sb.auth.signOut();
     sessionStorage.removeItem("sesion_usuario");
+    sessionStorage.removeItem("modo_solo_indicadores");
+    sessionStorage.removeItem("kpi_sesion_activa");
     usuarioActivo = null;
     verificarSesion();
+}
+
+// Vista restringida para quien entra con usuario de departamento (login del módulo
+// de Indicadores) desde la pantalla principal de login: solo ve esa pestaña, nada
+// más del sistema de SST. Análoga a la restricción que ya existe para "colaborador_campo".
+function activarModoSoloIndicadores() {
+    document.getElementById("login-screen").style.display = "none";
+    document.getElementById("app-content").style.display = "block";
+    sessionStorage.setItem("modo_solo_indicadores", "1");
+    ["menu-inicio","menu-actividades","menu-reportes","menu-accidentabilidad","menu-inducciones","menu-asociados","menu-indicadores","menu-jornadas","menu-inspecciones","menu-configuracion"]
+        .forEach(id => { let el = document.getElementById(id); if (el) el.style.display = "none"; });
+    showSection("indicadores-pro");
 }
 
 function verificarSesion() {
@@ -3155,7 +3183,7 @@ function verificarSesion() {
 
         // Rol "solo campo": únicamente ve Inspecciones, nada más del dashboard.
         let soloInspecciones = usuarioActivo.rol === "colaborador_campo";
-        ["menu-inicio","menu-actividades","menu-reportes","menu-accidentabilidad","menu-inducciones","menu-asociados","menu-indicadores","menu-jornadas","menu-configuracion"]
+        ["menu-inicio","menu-actividades","menu-reportes","menu-accidentabilidad","menu-inducciones","menu-asociados","menu-indicadores","menu-indicadores-pro","menu-jornadas","menu-configuracion"]
             .forEach(id => { let el = document.getElementById(id); if (el) el.style.display = soloInspecciones ? "none" : ""; });
         if (soloInspecciones) {
             cargarPreferenciasUsuarioActivo();
@@ -4824,6 +4852,14 @@ function updateCharts() {
             sessionStorage.setItem("sesion_usuario", JSON.stringify(usuarioActivo));
         }
     }
+    // Si no hay sesión real de Supabase Auth pero sí hay una sesión activa del
+    // módulo de Indicadores (login por departamento desde la pantalla principal),
+    // restaura directamente esa vista restringida en vez de pedir login de nuevo.
+    if (!session && sessionStorage.getItem("modo_solo_indicadores") === "1" && sessionStorage.getItem("kpi_sesion_activa")) {
+        activarModoSoloIndicadores();
+        return;
+    }
+
     verificarSesion();
 })();
 </script>
@@ -7235,12 +7271,8 @@ intentarSesionGuardada();
    no chocar nunca con los datos del sistema de SST.
    ================================================================ */
 
-// Antes este módulo usaba su propio proyecto Supabase separado. Ahora usa la MISMA
-// base de datos única del sistema (mismas credenciales que el resto de index.html),
-// reutilizando la tabla genérica "app_data" (columnas key/value) con sus claves
-// propias con prefijo "kpi_" para no chocar con los datos del sistema de SST.
-const SUPABASE_URL = "https://cjmzmxpqlvxprdqfjnpq.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqbXpteHBxbHZ4cHJkcWZqbnBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3NzgyNzcsImV4cCI6MjA5OTM1NDI3N30.jwQZjHKTWbDyJPj6eYD4UHM2lIXFXsnLrIw9IcYpzeg";
+const SUPABASE_URL = "https://gboiiwvzpkzefabuxmus.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdib2lpd3Z6cGt6ZWZhYnV4bXVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3NTM5NTIsImV4cCI6MjA5ODMyOTk1Mn0.fvBTfgziWQWedJ9VhiNDxaig1f3QbGXmUs67PPn0h0Q";
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 /* ---------------- DATOS SEMILLA (cargados del Sistema de Objetivos e Indicadores SGC 2026) ---------------- */
@@ -7630,6 +7662,25 @@ function cerrarSesion() {
     document.getElementById("loginScreen").style.display = "flex";
     document.getElementById("loginUser").value = "";
     document.getElementById("loginPass").value = "";
+    // Si se entró en modo "solo Indicadores" (login por departamento desde la
+    // pantalla principal), cerrar sesión regresa al login principal del sistema
+    // en lugar de dejar visible el cascarón del sistema con el menú oculto.
+    if (sessionStorage.getItem("modo_solo_indicadores") === "1" && typeof window.logout === "function") {
+        window.logout();
+    }
+}
+
+// Verificación de credenciales de este módulo invocable desde el login principal
+// del sistema (index.html), sin depender de los inputs internos del módulo.
+async function indLoginPrograma(user, pass) {
+    let u = usuarios[user];
+    if (!u) return false;
+    let hashIngresado = await hashPassword(pass, u.salt || "");
+    if (hashIngresado !== u.hash) return false;
+    usuarioActivo = { username: user, ...u };
+    sessionStorage.setItem("kpi_sesion_activa", user);
+    entrarAlSistema();
+    return true;
 }
 
 function entrarAlSistema() {
@@ -8884,6 +8935,7 @@ document.getElementById("loginPass").addEventListener("keydown", e => { if (e.ke
 /* ---- Exposición controlada a window: SOLO las funciones invocadas desde
    atributos onclick/onchange en el HTML, que corren en el scope global.
    Todo lo demás permanece encapsulado dentro de este módulo. ---- */
+window.indLoginPrograma = indLoginPrograma;
 window.abrirModalEditarUsuario = abrirModalEditarUsuario;
 window.adminAgregarDepartamento = adminAgregarDepartamento;
 window.adminAgregarIndicador = adminAgregarIndicador;
