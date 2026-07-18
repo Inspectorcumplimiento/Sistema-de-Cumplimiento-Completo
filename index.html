@@ -7235,8 +7235,12 @@ intentarSesionGuardada();
    no chocar nunca con los datos del sistema de SST.
    ================================================================ */
 
-const SUPABASE_URL = "https://gboiiwvzpkzefabuxmus.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdib2lpd3Z6cGt6ZWZhYnV4bXVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3NTM5NTIsImV4cCI6MjA5ODMyOTk1Mn0.fvBTfgziWQWedJ9VhiNDxaig1f3QbGXmUs67PPn0h0Q";
+// Antes este módulo usaba su propio proyecto Supabase separado. Ahora usa la MISMA
+// base de datos única del sistema (mismas credenciales que el resto de index.html),
+// reutilizando la tabla genérica "app_data" (columnas key/value) con sus claves
+// propias con prefijo "kpi_" para no chocar con los datos del sistema de SST.
+const SUPABASE_URL = "https://cjmzmxpqlvxprdqfjnpq.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqbXpteHBxbHZ4cHJkcWZqbnBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3NzgyNzcsImV4cCI6MjA5OTM1NDI3N30.jwQZjHKTWbDyJPj6eYD4UHM2lIXFXsnLrIw9IcYpzeg";
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 /* ---------------- DATOS SEMILLA (cargados del Sistema de Objetivos e Indicadores SGC 2026) ---------------- */
