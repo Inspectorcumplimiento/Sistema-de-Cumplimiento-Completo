@@ -1171,64 +1171,9 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
 /* ===== APP LAYOUT ===== */
 #ind-app-root #ind-app { display: none; min-height: 100vh; }
 
-#ind-app-root .topbar {
-    background: var(--sidebar-bg);
-    color: white;
-    padding: 16px 28px;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    flex-wrap: wrap;
-    gap: 12px;
-    border-bottom: 3px solid;
-    border-image: linear-gradient(90deg, var(--sgc-color), var(--sgcs-color)) 1;
-}
-
-#ind-app-root .topbar-left { display: flex; align-items: center; gap: 14px; }
-
-#ind-app-root .topbar-logo {
-    width: 40px; height: 40px; border-radius: 11px;
-    background: linear-gradient(135deg, var(--sgc-color) 0%, var(--sgcs-color) 100%);
-    display: flex; align-items: center; justify-content: center;
-    font-family: var(--font-display);
-    font-weight: 700; font-size: 17px;
-}
-
-#ind-app-root .topbar h1 { font-size: 17px; margin: 0; font-weight: 600; }
-
-#ind-app-root .topbar .subtitle { font-size: 12px; color: #9AA1B4; margin-top: 3px; }
-
-#ind-app-root .topbar-right { display: flex; align-items: center; gap: 14px; }
-
-#ind-app-root .topbar-user { text-align: right; font-size: 13px; }
-
-#ind-app-root .topbar-user strong { display: block; font-size: 14px; font-weight: 600; }
-
-#ind-app-root .topbar-user small { color: #9AA1B4; }
-
-#ind-app-root .btn-logout {
-    background: rgba(255,255,255,0.08);
-    color: white; border: 1px solid rgba(255,255,255,0.16); padding: 9px 16px;
-    border-radius: 9px; cursor: pointer; font-size: 13px; font-weight: 600;
-    font-family: var(--font-body);
-    transition: background .15s ease;
-}
-
-#ind-app-root .btn-logout:hover { background: rgba(255,255,255,0.16); }
-
-#ind-app-root .btn-admin-topbar {
-    background: linear-gradient(135deg, var(--sgc-color), var(--sgcs-color));
-    color: white; border: none; padding: 9px 16px;
-    border-radius: 9px; cursor: pointer; font-size: 13px; font-weight: 600;
-    font-family: var(--font-body);
-    transition: filter .15s ease;
-}
-
-#ind-app-root .btn-admin-topbar:hover { filter: brightness(1.1); }
-
-
 #ind-app-root .tabs-bar {
     display: flex;
+    flex-wrap: wrap;
     gap: 4px;
     background: white;
     padding: 8px 28px 0 28px;
@@ -2564,17 +2509,6 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
 
 <!-- ===================== APP ===================== -->
 <div id="ind-app">
-    <div class="topbar">
-        <div class="topbar-right">
-            <div class="topbar-user">
-                <strong id="topbarUserName">Usuario</strong>
-                <small id="topbarUserDept">Departamento</small>
-            </div>
-            <button class="btn-admin-topbar" id="indTabBtnAdmin" onclick="ind_mostrarTab('admin')" style="display:none;">⚙️ Administrar</button>
-            <button class="btn-logout" onclick="cerrarSesion()">Salir</button>
-        </div>
-    </div>
-
     <div class="tabs-bar">
         <button class="tab-btn active" id="indTabBtnDashboard" onclick="ind_mostrarTab('dashboard')">📊 Dashboard</button>
         <button class="tab-btn" id="indTabBtnIndicadores" onclick="ind_mostrarTab('indicadores')">📋 Indicadores</button>
@@ -2584,6 +2518,7 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
         <button class="tab-btn" id="indTabBtnConsolidado" onclick="ind_mostrarTab('consolidado')">🔀 Consolidado</button>
         <button class="tab-btn" id="indTabBtnMultianio" onclick="ind_mostrarTab('multianio')">📈 Multi-Año</button>
         <button class="tab-btn" id="indTabBtnResumen" onclick="ind_mostrarTab('resumen')">🖨️ Resumen Ejecutivo</button>
+        <button class="tab-btn" id="indTabBtnAdmin" onclick="ind_mostrarTab('admin')" style="display:none;">⚙️ Administrar</button>
     </div>
 
     <div class="main-content">
@@ -7708,17 +7643,6 @@ async function indLoginPrograma(user, pass) {
 function entrarAlSistema() {
     document.getElementById("loginScreen").style.display = "none";
     document.getElementById("ind-app").style.display = "block";
-    document.getElementById("topbarUserName").innerText = usuarioActivo.nombre;
-    let deptoNombre;
-    if (usuarioActivo.rol === "admin") {
-        deptoNombre = "Administrador — Acceso Total";
-    } else if (usuarioActivo.rol === "supervisor") {
-        let nombresEditables = (usuarioActivo.departamentosIds || []).map(id => departamentos.find(d => d.id === id)?.nombre).filter(Boolean).join(", ");
-        deptoNombre = "Supervisor — Ve todo · Edita: " + (nombresEditables || "—");
-    } else {
-        deptoNombre = departamentos.find(d => d.id === usuarioActivo.departamentoId)?.nombre || "Sin departamento";
-    }
-    document.getElementById("topbarUserDept").innerText = deptoNombre;
     document.getElementById("indTabBtnAdmin").style.display = usuarioActivo.rol === "admin" ? "inline-block" : "none";
     document.getElementById("indTabBtnAlertas").style.display = "inline-block";
     let mostrarVistasGerenciales = usuarioVeTodosLosDepartamentos() ? "inline-block" : "none";
