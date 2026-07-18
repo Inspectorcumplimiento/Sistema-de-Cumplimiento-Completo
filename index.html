@@ -2252,6 +2252,11 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
             <div style="background:white; padding:16px; border-radius:14px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); max-height:320px; overflow-y:auto;">
                 <div id="tablaHistorialAccidentes" style="display:flex; flex-direction:column; gap:8px; font-size:13px;"></div>
             </div>
+
+            <h2 class="section-title" style="color: var(--sec-red);">📅 Trazabilidad Mensual de Accidentes</h2>
+            <p style="color:#64748b; margin-top:-10px; font-size:13px;">Vista por mes de <span id="acc-mensual-empresa-label">Notions Dominicana</span> (<span id="acc-mensual-periodo-label">Año Actual</span>), calculada directamente de la bitácora de arriba. Un mes con accidentes se queda marcado en rojo para siempre, aunque pasen meses después sin ninguno; un mes sin accidentes no borra ni afecta lo que pasó en meses anteriores.</p>
+            <div id="grid-trazabilidad-mensual" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(90px, 1fr)); gap:8px; background:white; padding:16px; border-radius:14px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+            </div>
         </div>
 
         <div id="inducciones" class="section">
@@ -3445,6 +3450,7 @@ function cargarEmpresaAccidentabilidad(empresaKey) {
         if (btnSubmit) { btnSubmit.disabled = true; btnSubmit.style.opacity = "0.5"; btnSubmit.style.cursor = "not-allowed"; }
         document.getElementById("acc-banner-trazabilidad").style.display = "none";
         calcularHorasEnCaliente();
+        renderTrazabilidadMensualAccidentes();
         return;
     }
 
@@ -3466,6 +3472,7 @@ function cargarEmpresaAccidentabilidad(empresaKey) {
     // La trazabilidad automática de días transcurridos solo aplica al periodo actual (en curso)
     if (periodo === "actual") { verificarTrazabilidadFechas(); } else { document.getElementById("acc-banner-trazabilidad").style.display = "none"; }
     calcularHorasEnCaliente();
+    renderTrazabilidadMensualAccidentes();
 }
 
 function verificarTrazabilidadFechas() {
@@ -3666,6 +3673,7 @@ function renderModuloVisualAccidentabilidad() {
     }
 
     renderHistorialAccidentes();
+    renderTrazabilidadMensualAccidentes();
     renderDashboardNotionsGroupCharts();
 }
 
@@ -3725,6 +3733,48 @@ function renderDashboardNotionsGroupCharts() {
             scales: { y: { beginAtZero: true } }
         }
     });
+}
+
+// Vista mensual de trazabilidad: se calcula en vivo a partir de la bitácora permanente
+// de accidentes (historialAccidentes), nunca guarda ni modifica nada por su cuenta.
+// Cada mes acumula la cantidad de accidentes de ese mes (si hay más de uno en el mismo
+// mes, se suman); un mes con accidente se queda marcado en rojo para siempre aunque
+// pasen meses siguientes sin ninguno, y un mes sin accidentes nunca borra ni afecta lo
+// que ya pasó en un mes anterior.
+function renderTrazabilidadMensualAccidentes() {
+    let cont = document.getElementById("grid-trazabilidad-mensual");
+    if (!cont) return;
+    let empresaKey = document.getElementById("acc_empresa_selector").value;
+    let periodo = document.getElementById("acc_periodo_selector").value;
+    let nombresMap = { notions: "Notions Dominicana", now: "Now Logistics", gtg: "GTG", notions_group: "Notions Group (Consolidado)" };
+    let etiquetaPeriodo = { actual: "Año Actual", anterior: "Año Anterior" };
+    let elEmpresaLabel = document.getElementById("acc-mensual-empresa-label");
+    let elPeriodoLabel = document.getElementById("acc-mensual-periodo-label");
+    if (elEmpresaLabel) elEmpresaLabel.innerText = nombresMap[empresaKey] || empresaKey;
+    if (elPeriodoLabel) elPeriodoLabel.innerText = etiquetaPeriodo[periodo] || periodo;
+
+    let empresasAIncluir = empresaKey === "notions_group" ? ["notions", "now", "gtg"] : [empresaKey];
+    let conteoPorMes = new Array(12).fill(0);
+    empresasAIncluir.forEach(key => {
+        let hist = (accidentabilidadMaestra[key] && accidentabilidadMaestra[key].historialAccidentes) || [];
+        hist.forEach(ev => {
+            if (ev.periodo !== periodo || !ev.fecha) return;
+            let mes = parseInt(ev.fecha.split("-")[1], 10) - 1;
+            if (mes >= 0 && mes <= 11) conteoPorMes[mes] += (ev.cantidadAccidentes || 0);
+        });
+    });
+
+    let nombresMeses = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+    cont.innerHTML = nombresMeses.map((nombreMes, i) => {
+        let cantidad = conteoPorMes[i];
+        let tieneAccidente = cantidad > 0;
+        return `
+        <div style="text-align:center; padding:10px 4px; border-radius:10px; background:${tieneAccidente ? '#fee2e2' : '#f1f5f9'}; border:1px solid ${tieneAccidente ? '#fca5a5' : '#e2e8f0'};">
+            <div style="font-size:11px; font-weight:bold; color:${tieneAccidente ? 'var(--sec-red)' : '#64748b'}; text-transform:uppercase;">${nombreMes}</div>
+            <div style="font-size:20px; font-weight:bold; color:${tieneAccidente ? 'var(--sec-red)' : '#1a1f2e'};">${cantidad}</div>
+            <div style="font-size:10px; color:#94a3b8;">${tieneAccidente ? '🚨 con accidente' : '✅ sin accidente'}</div>
+        </div>`;
+    }).join("");
 }
 
 function renderHistorialAccidentes() {
@@ -3789,6 +3839,7 @@ function editarEventoAccidente(empresaKey, idx) {
     localStorage.setItem("acc_master_3_companies", JSON.stringify(accidentabilidadMaestra));
     sbSet("acc_master_3_companies", JSON.stringify(accidentabilidadMaestra));
     renderHistorialAccidentes();
+    renderTrazabilidadMensualAccidentes();
 }
 
 function eliminarEventoAccidente(empresaKey, idx) {
@@ -3798,6 +3849,7 @@ function eliminarEventoAccidente(empresaKey, idx) {
     localStorage.setItem("acc_master_3_companies", JSON.stringify(accidentabilidadMaestra));
     sbSet("acc_master_3_companies", JSON.stringify(accidentabilidadMaestra));
     renderHistorialAccidentes();
+    renderTrazabilidadMensualAccidentes();
 }
 
 /* INDUCCIONES */
