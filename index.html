@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Control de Cumplimiento </title>
+<title>Departamento Cumplimiento &amp; MC</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -1544,7 +1544,7 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
 
 <div id="login-screen" class="login-container">
     <div class="login-card">
-        <h2>🛡️ Control de Cumplimiento</h2>
+        <h2>🛡️ Departamento Cumplimiento &amp; MC</h2>
         <p class="subtitle">Sistema de Monitoreo & Continuidad </p>
         <form id="loginForm" onsubmit="login(event)">
             <input type="text" id="username" placeholder="Correo (o usuario de departamento para Indicadores)" required>
@@ -1557,7 +1557,7 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
 <div id="app-content">
 
     <div class="sidebar">
-        <h2>🛡️ Control de Cumplimiento</h2>
+        <h2>🛡️ Departamento Cumplimiento &amp; MC</h2>
         
         <div class="user-box">
             <img id="sidebar-avatar" src="" class="profile-img-preview" alt="Avatar" onerror="this.src='https://www.w3schools.com/howto/img_avatar.png'">
@@ -7661,6 +7661,26 @@ function entrarAlSistema() {
     poblarSelectorDepartamentoFiltro();
     poblarSelectorAnio();
     renderTodo();
+
+    // Si esta persona entró directo con su usuario de departamento (sin pasar por
+    // el login de correo del sistema principal), el sidebar general nunca se llena
+    // con su nombre/rol porque ese login vive aparte. Lo completamos aquí para que
+    // vean su nombre y departamento en el mismo lugar donde lo ven Victor/Joan/Jhoan.
+    if (sessionStorage.getItem("modo_solo_indicadores") === "1") {
+        let deptoNombre;
+        if (usuarioActivo.rol === "admin") {
+            deptoNombre = "Administrador — Acceso Total";
+        } else if (usuarioActivo.rol === "supervisor") {
+            let nombresEditables = (usuarioActivo.departamentosIds || []).map(id => departamentos.find(d => d.id === id)?.nombre).filter(Boolean).join(", ");
+            deptoNombre = "Supervisor — Ve todo · Edita: " + (nombresEditables || "—");
+        } else {
+            deptoNombre = departamentos.find(d => d.id === usuarioActivo.departamentoId)?.nombre || "Sin departamento";
+        }
+        let elNombre = document.getElementById("user-display-name");
+        let elRol = document.getElementById("user-display-role");
+        if (elNombre) elNombre.innerText = usuarioActivo.nombre;
+        if (elRol) elRol.innerText = deptoNombre;
+    }
 }
 
 /* ---------------- TABS ---------------- */
