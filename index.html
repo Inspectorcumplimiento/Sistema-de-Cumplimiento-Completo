@@ -1606,6 +1606,7 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
             <p id="dashboard-date-indicator" style="font-size:14px; font-weight:600; color:var(--accent-blue); margin-top:10px; margin-bottom:20px;">⏱️ Mostrando métricas del día actual</p>
 
             <div id="dashboard-jornadas-alertas"></div>
+            <div id="dashboard-auditorias-alerta"></div>
 
             <div class="cards">
                 <div class="card c-total">
@@ -2801,6 +2802,41 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
 
             <div class="kpi-cards" id="auditCardsResumen"></div>
 
+            <h2 class="section-title" style="color: var(--sec-red);">🎯 Tablero de Seguimiento (Todos los Hallazgos Abiertos)</h2>
+            <p style="color:#64748b; margin-top:-10px; font-size:13px;">Todos los hallazgos pendientes de cerrar, de todas las auditorías, en un solo lugar — ordenados por urgencia. Un hallazgo vencido se queda marcado en rojo hasta que se cierre.</p>
+            <div class="form-group-row" style="margin-bottom:6px;">
+                <div>
+                    <label>Empresa</label>
+                    <select id="seg_filtro_empresa" onchange="renderTableroSeguimiento()">
+                        <option value="todas">Todas</option>
+                        <option value="notions">Notions Dominicana</option>
+                        <option value="gtg">GTG</option>
+                        <option value="now">Now Logistics</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Severidad</label>
+                    <select id="seg_filtro_severidad" onchange="renderTableroSeguimiento()">
+                        <option value="todas">Todas</option>
+                        <option value="critica">Crítica</option>
+                        <option value="mayor">Mayor</option>
+                        <option value="menor">Menor</option>
+                    </select>
+                </div>
+                <div style="display:flex; align-items:flex-end;">
+                    <label style="display:flex; align-items:center; gap:6px; font-weight:normal;">
+                        <input type="checkbox" id="seg_solo_vencidos" onchange="renderTableroSeguimiento()"> Solo vencidos
+                    </label>
+                </div>
+            </div>
+            <div id="seg-mini-resumen" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;"></div>
+            <table>
+                <thead>
+                    <tr><th>Urgencia</th><th>Auditoría</th><th>Empresa</th><th>Hallazgo</th><th>Severidad</th><th>Responsable</th><th>Fecha Límite</th><th>Acción</th></tr>
+                </thead>
+                <tbody id="tablaTableroSeguimiento"></tbody>
+            </table>
+
             <h2 class="section-title" style="color: var(--accent-blue);">🗓️ Planificar Nueva Auditoría</h2>
             <form id="auditForm" onsubmit="guardarNuevaAuditoria(event)">
                 <div class="form-group-row">
@@ -3233,6 +3269,7 @@ function verificarSesion() {
         cargarPreferenciasUsuarioActivo();
         configurarSelectoresPorRol();
         rotarSabiasQue();
+        actualizarAlertaAuditoriasInicio();
 
         let puedeSupervisar = usuarioActivo.rol === "admin" || usuarioActivo.rol === "supervisor";
         document.getElementById("admin-view-selector").style.display = puedeSupervisar ? "flex" : "none";
@@ -3301,6 +3338,7 @@ function showSection(id){
     let targetMenu = document.getElementById(`menu-${id}`);
     if(targetMenu) targetMenu.classList.add("active-menu");
     if(id === 'inicio') rotarSabiasQue();
+    if(id === 'inicio') actualizarAlertaAuditoriasInicio();
     if(id === 'indicadores' || id === 'inicio' || id === 'accidentabilidad') updateCharts();
     if(id === 'accidentabilidad' || id === 'inicio') verificarCambioDeAnioAccidentabilidad();
     if(id === 'auditorias') cargarAuditorias();
@@ -4838,6 +4876,7 @@ async function cargarAuditorias() {
     auditoriaBitacora = bit || [];
     renderAuditorias();
     renderBitacoraAuditorias();
+    renderTableroSeguimiento();
 }
 
 async function registrarBitacoraAuditoria(tipoEvento, auditoriaId, descripcion) {
@@ -4867,6 +4906,7 @@ async function guardarNuevaAuditoria(event) {
     document.getElementById("auditForm").reset();
     renderAuditorias();
     renderBitacoraAuditorias();
+    renderTableroSeguimiento();
 }
 
 function nombreEmpresaAuditoria(key) { return { notions: "Notions Dominicana", gtg: "GTG", now: "Now Logistics" }[key] || key; }
@@ -5088,6 +5128,7 @@ async function guardarNuevoHallazgo(event, auditoriaId) {
     await registrarBitacoraAuditoria("hallazgo_creado", auditoriaId, `Se registró un hallazgo (${nuevo.severidad}) en "${a ? a.titulo : ''}": ${nuevo.descripcion}`);
     renderAuditorias();
     renderBitacoraAuditorias();
+    renderTableroSeguimiento();
 }
 
 async function cerrarHallazgo(hallazgoId) {
@@ -5101,6 +5142,7 @@ async function cerrarHallazgo(hallazgoId) {
     await registrarBitacoraAuditoria("hallazgo_cerrado", h ? h.auditoria_id : null, `Se cerró el hallazgo: ${h ? h.descripcion : ""}`);
     renderAuditorias();
     renderBitacoraAuditorias();
+    renderTableroSeguimiento();
 }
 
 async function eliminarHallazgo(hallazgoId) {
@@ -5113,6 +5155,7 @@ async function eliminarHallazgo(hallazgoId) {
     await registrarBitacoraAuditoria("hallazgo_eliminado", h ? h.auditoria_id : null, `Se eliminó el hallazgo: ${h ? h.descripcion : ""}`);
     renderAuditorias();
     renderBitacoraAuditorias();
+    renderTableroSeguimiento();
 }
 
 async function marcarAuditoriaEjecutada(auditoriaId) {
@@ -5124,6 +5167,7 @@ async function marcarAuditoriaEjecutada(auditoriaId) {
     await registrarBitacoraAuditoria("auditoria_ejecutada", auditoriaId, `Se marcó como ejecutada la auditoría "${a ? a.titulo : ''}".`);
     renderAuditorias();
     renderBitacoraAuditorias();
+    renderTableroSeguimiento();
 }
 
 async function cerrarAuditoria(auditoriaId) {
@@ -5137,6 +5181,7 @@ async function cerrarAuditoria(auditoriaId) {
     await registrarBitacoraAuditoria("auditoria_cerrada", auditoriaId, `Se cerró la auditoría "${a ? a.titulo : ''}"${abiertos > 0 ? ` con ${abiertos} hallazgo(s) todavía abierto(s)` : ""}.`);
     renderAuditorias();
     renderBitacoraAuditorias();
+    renderTableroSeguimiento();
 }
 
 async function eliminarAuditoria(auditoriaId) {
@@ -5151,6 +5196,7 @@ async function eliminarAuditoria(auditoriaId) {
     await registrarBitacoraAuditoria("auditoria_eliminada", auditoriaId, `Se eliminó la auditoría "${a ? a.titulo : ''}" y todos sus hallazgos.`);
     renderAuditorias();
     renderBitacoraAuditorias();
+    renderTableroSeguimiento();
 }
 
 function renderBitacoraAuditorias() {
@@ -5174,6 +5220,97 @@ function renderBitacoraAuditorias() {
             <strong>${etiquetas[ev.tipo_evento] || ev.tipo_evento}</strong> — ${ev.descripcion}
             <br><small style="color:#94a3b8;">${new Date(ev.fecha).toLocaleString()} · ${ev.usuario}</small>
         </div>`).join("");
+}
+
+// Tablero de seguimiento: junta TODOS los hallazgos abiertos de TODAS las auditorías
+// (sin importar cuál esté seleccionada) en una sola tabla ordenada por urgencia, para
+// que nadie tenga que entrar auditoría por auditoría a ver qué falta por cerrar.
+function calcularUrgenciaHallazgo(fechaLimite) {
+    if (!fechaLimite) return { dias: null, etiqueta: "Sin fecha", clase: "" };
+    let hoy = new Date(); hoy.setHours(0,0,0,0);
+    let limite = new Date(fechaLimite + "T00:00:00");
+    let dias = Math.round((hoy - limite) / 86400000);
+    if (dias > 0) return { dias, etiqueta: `🔴 Vencido hace ${dias} día(s)`, clase: "vencido" };
+    if (dias === 0) return { dias, etiqueta: `🟠 Vence hoy`, clase: "hoy" };
+    if (dias >= -3) return { dias, etiqueta: `🟡 Faltan ${-dias} día(s)`, clase: "proximo" };
+    return { dias, etiqueta: `🟢 Faltan ${-dias} día(s)`, clase: "" };
+}
+
+function renderTableroSeguimiento() {
+    let cont = document.getElementById("tablaTableroSeguimiento");
+    if (!cont) return;
+
+    let filtroEmpresa = document.getElementById("seg_filtro_empresa")?.value || "todas";
+    let filtroSeveridad = document.getElementById("seg_filtro_severidad")?.value || "todas";
+    let soloVencidos = document.getElementById("seg_solo_vencidos")?.checked || false;
+
+    let filas = auditoriaHallazgos
+        .filter(h => h.estado === "abierto")
+        .map(h => ({ hallazgo: h, auditoria: auditorias.find(a => a.id === h.auditoria_id) }))
+        .filter(x => x.auditoria);
+
+    if (filtroEmpresa !== "todas") filas = filas.filter(x => x.auditoria.empresa === filtroEmpresa);
+    if (filtroSeveridad !== "todas") filas = filas.filter(x => x.hallazgo.severidad === filtroSeveridad);
+    if (soloVencidos) filas = filas.filter(x => calcularUrgenciaHallazgo(x.hallazgo.fecha_limite).dias > 0);
+
+    filas.sort((a, b) => {
+        if (!a.hallazgo.fecha_limite) return 1;
+        if (!b.hallazgo.fecha_limite) return -1;
+        return a.hallazgo.fecha_limite.localeCompare(b.hallazgo.fecha_limite);
+    });
+
+    cont.innerHTML = filas.length === 0
+        ? `<tr><td colspan="8" style="text-align:center; color:#94a3b8;">🎉 No hay hallazgos abiertos que coincidan con el filtro.</td></tr>`
+        : filas.map(({ hallazgo: h, auditoria: a }) => {
+            let urg = calcularUrgenciaHallazgo(h.fecha_limite);
+            let fondoFila = urg.clase === "vencido" ? "background:#fee2e2;" : (urg.clase === "hoy" ? "background:#ffedd5;" : (urg.clase === "proximo" ? "background:#fef9c3;" : ""));
+            return `
+            <tr style="${fondoFila}">
+                <td>${urg.etiqueta}</td>
+                <td>${a.titulo}</td>
+                <td>${nombreEmpresaAuditoria(a.empresa)}</td>
+                <td>${h.descripcion}${h.evidencia_url ? ` <a href="${h.evidencia_url}" target="_blank">📎</a>` : ""}</td>
+                <td>${badgeSeveridadHallazgo(h.severidad)}</td>
+                <td>${h.responsable || "—"}</td>
+                <td>${h.fecha_limite || "—"}</td>
+                <td>
+                    ${puedeGestionarAuditorias() ? `<button class="btn-add" style="padding:3px 8px; font-size:11px;" onclick="cerrarHallazgo('${h.id}')">✅ Cerrar</button>` : ""}
+                    <button style="padding:3px 8px; font-size:11px; background:var(--accent-blue); color:white; border:none; border-radius:6px; cursor:pointer;" onclick="verDetalleAuditoria('${a.id}')">🔍 Ver</button>
+                </td>
+            </tr>`;
+        }).join("");
+
+    let totalAbiertosGlobal = auditoriaHallazgos.filter(h => h.estado === "abierto").length;
+    let vencidos = auditoriaHallazgos.filter(h => h.estado === "abierto" && calcularUrgenciaHallazgo(h.fecha_limite).dias > 0).length;
+    let venceHoy = auditoriaHallazgos.filter(h => h.estado === "abierto" && calcularUrgenciaHallazgo(h.fecha_limite).dias === 0).length;
+    let proximos = auditoriaHallazgos.filter(h => { let d = calcularUrgenciaHallazgo(h.fecha_limite).dias; return h.estado === "abierto" && d < 0 && d >= -3; }).length;
+
+    let mini = document.getElementById("seg-mini-resumen");
+    if (mini) {
+        mini.innerHTML = `
+        <span class="badge-nivel" style="background:#e2e8f0; color:#475569; padding:6px 12px; font-size:13px;">Total abiertos: ${totalAbiertosGlobal}</span>
+        <span class="badge-nivel badge-bajo" style="padding:6px 12px; font-size:13px;">🔴 Vencidos: ${vencidos}</span>
+        <span class="badge-nivel badge-medio" style="padding:6px 12px; font-size:13px; background:#ffedd5; color:#9a3412;">🟠 Vencen hoy: ${venceHoy}</span>
+        <span class="badge-nivel" style="padding:6px 12px; font-size:13px; background:#fef9c3; color:#854d0e;">🟡 Próximos 3 días: ${proximos}</span>`;
+    }
+}
+
+// Aviso en el Dashboard General (Inicio): trae solo lo mínimo necesario (sin cargar
+// auditorías completas) para avisar si hay hallazgos vencidos, con un botón directo
+// al Tablero de Seguimiento de Auditorías.
+async function actualizarAlertaAuditoriasInicio() {
+    let cont = document.getElementById("dashboard-auditorias-alerta");
+    if (!cont) return;
+    let { data, error } = await _sb.from("auditoria_hallazgos").select("id, fecha_limite").eq("estado", "abierto");
+    if (error) { console.error("No se pudo revisar hallazgos vencidos:", error); return; }
+    let hoy = new Date(); hoy.setHours(0,0,0,0);
+    let vencidos = (data || []).filter(h => h.fecha_limite && (new Date(h.fecha_limite + "T00:00:00") < hoy)).length;
+    if (vencidos === 0) { cont.innerHTML = ""; return; }
+    cont.innerHTML = `
+    <div style="background:#fee2e2; border:1px solid #fca5a5; color:#991b1b; padding:12px 16px; border-radius:10px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <span>🚨 <strong>${vencidos} hallazgo(s) de auditoría vencido(s)</strong> sin cerrar.</span>
+        <button class="btn-add" style="background:var(--sec-red);" onclick="showSection('auditorias')">Ver Tablero de Seguimiento</button>
+    </div>`;
 }
 
 /* EXPORTS */
