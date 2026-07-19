@@ -4887,7 +4887,7 @@ let auditoriaBitacora = [];
 let auditoriaAbiertaId = null;
 
 function puedeGestionarAuditorias() {
-    return !!usuarioActivo && ["admin", "supervisor", "gerente", "auditor"].includes(usuarioActivo.rol);
+    return !!usuarioActivo && ["admin", "supervisor", "gerente", "auditor", "empleado"].includes(usuarioActivo.rol);
 }
 function esAdminAuditorias() {
     return !!usuarioActivo && usuarioActivo.rol === "admin";
