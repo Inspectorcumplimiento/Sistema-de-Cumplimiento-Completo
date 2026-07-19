@@ -2823,6 +2823,16 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
                         <option value="menor">Menor</option>
                     </select>
                 </div>
+                <div>
+                    <label>Norma</label>
+                    <select id="seg_filtro_norma" onchange="renderTableroSeguimiento()">
+                        <option value="todas">Todas</option>
+                        <option value="basc">BASC</option>
+                        <option value="oea">OEA</option>
+                        <option value="iso9001">ISO 9001</option>
+                        <option value="na">N/A</option>
+                    </select>
+                </div>
                 <div style="display:flex; align-items:flex-end;">
                     <label style="display:flex; align-items:center; gap:6px; font-weight:normal;">
                         <input type="checkbox" id="seg_solo_vencidos" onchange="renderTableroSeguimiento()"> Solo vencidos
@@ -2855,6 +2865,17 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
                             <option value="proveedor">A Proveedor</option>
                             <option value="cliente">De Cliente</option>
                             <option value="certificacion">De Certificación</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group-row">
+                    <div>
+                        <label>Norma / Certificación</label>
+                        <select id="audit_norma" required>
+                            <option value="na">N/A (No aplica a certificación)</option>
+                            <option value="basc">BASC</option>
+                            <option value="oea">OEA</option>
+                            <option value="iso9001">ISO 9001</option>
                         </select>
                     </div>
                 </div>
@@ -2909,10 +2930,20 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
                         <option value="cerrada">Cerrada</option>
                     </select>
                 </div>
+                <div>
+                    <label>Filtrar por norma</label>
+                    <select id="audit_filtro_norma" onchange="renderAuditorias()">
+                        <option value="todas">Todas</option>
+                        <option value="basc">BASC</option>
+                        <option value="oea">OEA</option>
+                        <option value="iso9001">ISO 9001</option>
+                        <option value="na">N/A</option>
+                    </select>
+                </div>
             </div>
             <table>
                 <thead>
-                    <tr><th>Título</th><th>Empresa</th><th>Tipo</th><th>Auditor</th><th>Fecha Planificada</th><th>Estado</th><th>Hallazgos Abiertos</th><th>Acción</th></tr>
+                    <tr><th>Título</th><th>Empresa</th><th>Tipo</th><th>Norma</th><th>Auditor</th><th>Fecha Planificada</th><th>Estado</th><th>Hallazgos Abiertos</th><th>Acción</th></tr>
                 </thead>
                 <tbody id="tablaAuditorias"></tbody>
             </table>
@@ -4891,6 +4922,7 @@ async function guardarNuevaAuditoria(event) {
     let nuevo = {
         empresa: document.getElementById("audit_empresa").value,
         tipo: document.getElementById("audit_tipo").value,
+        norma: document.getElementById("audit_norma").value,
         departamento: document.getElementById("audit_departamento").value.trim(),
         auditor_nombre: document.getElementById("audit_auditor").value.trim(),
         titulo: document.getElementById("audit_titulo").value.trim(),
@@ -4911,6 +4943,12 @@ async function guardarNuevaAuditoria(event) {
 
 function nombreEmpresaAuditoria(key) { return { notions: "Notions Dominicana", gtg: "GTG", now: "Now Logistics" }[key] || key; }
 function nombreTipoAuditoria(tipo) { return { interna: "Interna", proveedor: "A Proveedor", cliente: "De Cliente", certificacion: "De Certificación" }[tipo] || tipo; }
+function nombreNormaAuditoria(norma) { return { basc: "BASC", oea: "OEA", iso9001: "ISO 9001", na: "N/A" }[norma] || "N/A"; }
+function badgeNormaAuditoria(norma) {
+    if (!norma || norma === "na") return `<span class="badge-nivel" style="background:#e2e8f0; color:#475569;">N/A</span>`;
+    return `<span class="badge-nivel" style="background:#dbeafe; color:#1e40af;">${nombreNormaAuditoria(norma)}</span>`;
+}
+function nombreEstadoAuditoria(estado) { return { planificada: "Planificada", en_proceso: "En Proceso", cerrada: "Cerrada" }[estado] || estado; }
 function badgeEstadoAuditoria(estado) {
     if (estado === "cerrada") return `<span class="badge-nivel badge-adecuado">Cerrada</span>`;
     if (estado === "en_proceso") return `<span class="badge-nivel badge-medio">En Proceso</span>`;
@@ -4928,25 +4966,36 @@ function renderAuditorias() {
 
     let filtroEmpresa = document.getElementById("audit_filtro_empresa")?.value || "todas";
     let filtroEstado = document.getElementById("audit_filtro_estado")?.value || "todas";
+    let filtroNorma = document.getElementById("audit_filtro_norma")?.value || "todas";
 
     let lista = auditorias.filter(a => {
         if (filtroEmpresa !== "todas" && a.empresa !== filtroEmpresa) return false;
         if (filtroEstado !== "todas" && a.estado !== filtroEstado) return false;
+        if (filtroNorma !== "todas" && (a.norma || "na") !== filtroNorma) return false;
         return true;
     });
 
+    let puedeGestionar = puedeGestionarAuditorias();
     cont.innerHTML = lista.length === 0
-        ? `<tr><td colspan="8" style="text-align:center; color:#94a3b8;">No hay auditorías que coincidan con el filtro.</td></tr>`
+        ? `<tr><td colspan="9" style="text-align:center; color:#94a3b8;">No hay auditorías que coincidan con el filtro.</td></tr>`
         : lista.map(a => {
             let hallazgosAbiertos = auditoriaHallazgos.filter(h => h.auditoria_id === a.id && h.estado === "abierto").length;
+            let celdaEstado = puedeGestionar
+                ? `<select onchange="cambiarEstadoAuditoria('${a.id}', this.value)" style="font-size:12px; padding:3px 4px;">
+                    <option value="planificada" ${a.estado === "planificada" ? "selected" : ""}>Planificada</option>
+                    <option value="en_proceso" ${a.estado === "en_proceso" ? "selected" : ""}>En Proceso</option>
+                    <option value="cerrada" ${a.estado === "cerrada" ? "selected" : ""}>Cerrada</option>
+                   </select>`
+                : badgeEstadoAuditoria(a.estado);
             return `
             <tr>
                 <td>${a.titulo}</td>
                 <td>${nombreEmpresaAuditoria(a.empresa)}</td>
                 <td>${nombreTipoAuditoria(a.tipo)}</td>
+                <td>${badgeNormaAuditoria(a.norma)}</td>
                 <td>${a.auditor_nombre}</td>
                 <td>${a.fecha_planificada}</td>
-                <td>${badgeEstadoAuditoria(a.estado)}</td>
+                <td>${celdaEstado}</td>
                 <td>${hallazgosAbiertos > 0 ? `<span class="badge-nivel badge-bajo">${hallazgosAbiertos} abierto(s)</span>` : `<span class="badge-nivel badge-adecuado">0</span>`}</td>
                 <td><button class="btn-add" style="padding:4px 10px; font-size:12px;" onclick="verDetalleAuditoria('${a.id}')">Ver / Gestionar</button></td>
             </tr>`;
@@ -5012,7 +5061,7 @@ function renderDetalleAuditoria(id) {
             <div>
                 <h2 style="margin:0;">${a.titulo}</h2>
                 <p style="color:#64748b; margin:4px 0 0 0; font-size:13px;">${nombreEmpresaAuditoria(a.empresa)} · ${nombreTipoAuditoria(a.tipo)} · ${a.departamento} · Auditor: ${a.auditor_nombre}</p>
-                <p style="margin:6px 0 0 0;">${badgeEstadoAuditoria(a.estado)} &nbsp; Planificada: ${a.fecha_planificada}${a.fecha_ejecucion ? " &nbsp;·&nbsp; Ejecutada: " + a.fecha_ejecucion : ""}</p>
+                <p style="margin:6px 0 0 0;">${badgeEstadoAuditoria(a.estado)} ${badgeNormaAuditoria(a.norma)} &nbsp; Planificada: ${a.fecha_planificada}${a.fecha_ejecucion ? " &nbsp;·&nbsp; Ejecutada: " + a.fecha_ejecucion : ""}</p>
                 ${a.notas ? `<p style="margin-top:8px; font-size:13px; color:#475569;">📝 ${a.notas}</p>` : ""}
             </div>
             <button onclick="cerrarDetalleAuditoria()" style="background:none; border:none; font-size:20px; cursor:pointer; color:#94a3b8;">✖</button>
@@ -5158,6 +5207,21 @@ async function eliminarHallazgo(hallazgoId) {
     renderTableroSeguimiento();
 }
 
+async function cambiarEstadoAuditoria(auditoriaId, nuevoEstado) {
+    let a = auditorias.find(x => x.id === auditoriaId);
+    if (!a || a.estado === nuevoEstado) return;
+    let estadoAnterior = a.estado;
+    let cambios = { estado: nuevoEstado };
+    if (nuevoEstado !== "planificada" && !a.fecha_ejecucion) cambios.fecha_ejecucion = new Date().toISOString().split("T")[0];
+    let { error } = await _sb.from("auditorias").update(cambios).eq("id", auditoriaId);
+    if (error) { alert("No se pudo cambiar el estatus: " + error.message); renderAuditorias(); return; }
+    Object.assign(a, cambios);
+    await registrarBitacoraAuditoria("auditoria_estado_cambiado", auditoriaId, `Se cambió el estatus de "${a.titulo}" de "${nombreEstadoAuditoria(estadoAnterior)}" a "${nombreEstadoAuditoria(nuevoEstado)}".`);
+    renderAuditorias();
+    renderBitacoraAuditorias();
+    renderTableroSeguimiento();
+}
+
 async function marcarAuditoriaEjecutada(auditoriaId) {
     let hoy = new Date().toISOString().split("T")[0];
     let { error } = await _sb.from("auditorias").update({ estado: "en_proceso", fecha_ejecucion: hoy }).eq("id", auditoriaId);
@@ -5211,6 +5275,7 @@ function renderBitacoraAuditorias() {
         auditoria_ejecutada: "▶️ Auditoría ejecutada",
         auditoria_cerrada: "🏁 Auditoría cerrada",
         auditoria_eliminada: "🗑️ Auditoría eliminada",
+        auditoria_estado_cambiado: "🔄 Cambio de estatus",
         hallazgo_creado: "🚩 Hallazgo registrado",
         hallazgo_cerrado: "✅ Hallazgo cerrado",
         hallazgo_eliminado: "🗑️ Hallazgo eliminado"
@@ -5242,6 +5307,7 @@ function renderTableroSeguimiento() {
 
     let filtroEmpresa = document.getElementById("seg_filtro_empresa")?.value || "todas";
     let filtroSeveridad = document.getElementById("seg_filtro_severidad")?.value || "todas";
+    let filtroNorma = document.getElementById("seg_filtro_norma")?.value || "todas";
     let soloVencidos = document.getElementById("seg_solo_vencidos")?.checked || false;
 
     let filas = auditoriaHallazgos
@@ -5251,6 +5317,7 @@ function renderTableroSeguimiento() {
 
     if (filtroEmpresa !== "todas") filas = filas.filter(x => x.auditoria.empresa === filtroEmpresa);
     if (filtroSeveridad !== "todas") filas = filas.filter(x => x.hallazgo.severidad === filtroSeveridad);
+    if (filtroNorma !== "todas") filas = filas.filter(x => (x.auditoria.norma || "na") === filtroNorma);
     if (soloVencidos) filas = filas.filter(x => calcularUrgenciaHallazgo(x.hallazgo.fecha_limite).dias > 0);
 
     filas.sort((a, b) => {
@@ -5267,7 +5334,7 @@ function renderTableroSeguimiento() {
             return `
             <tr style="${fondoFila}">
                 <td>${urg.etiqueta}</td>
-                <td>${a.titulo}</td>
+                <td>${a.titulo}<br>${badgeNormaAuditoria(a.norma)}</td>
                 <td>${nombreEmpresaAuditoria(a.empresa)}</td>
                 <td>${h.descripcion}${h.evidencia_url ? ` <a href="${h.evidencia_url}" target="_blank">📎</a>` : ""}</td>
                 <td>${badgeSeveridadHallazgo(h.severidad)}</td>
