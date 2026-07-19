@@ -1578,6 +1578,7 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
         <a id="menu-jornadas" onclick="showSection('jornadas')">📅 Jornadas y Eventos</a>
         <a id="menu-indicadores-pro" onclick="abrirIndicadores()">📊 Sistema de Indicadores</a>
         <a id="menu-inspecciones" onclick="showSection('inspecciones')">🔍 Inspecciones</a>
+        <a id="menu-auditorias" onclick="showSection('auditorias')">🕵️ Auditorías</a>
         <a id="menu-configuracion" onclick="showSection('configuracion')">⚙️ Configuración</a>
         
         <a onclick="logout()" class="btn-logout">🚪 Cerrar Sesión</a>
@@ -2794,6 +2795,101 @@ table.tabla-simple tr:hover td { background:var(--bg-light); }
 
         </div>
 
+        <div id="auditorias" class="section">
+            <h1>🕵️ Módulo de Auditorías</h1>
+            <p style="color:gray; margin-top:-8px;">Planifica auditorías, registra hallazgos con evidencia fotográfica, y da seguimiento a las acciones correctivas hasta su cierre.</p>
+
+            <div class="kpi-cards" id="auditCardsResumen"></div>
+
+            <h2 class="section-title" style="color: var(--accent-blue);">🗓️ Planificar Nueva Auditoría</h2>
+            <form id="auditForm" onsubmit="guardarNuevaAuditoria(event)">
+                <div class="form-group-row">
+                    <div>
+                        <label>Empresa</label>
+                        <select id="audit_empresa" required>
+                            <option value="notions">Notions Dominicana</option>
+                            <option value="gtg">GTG</option>
+                            <option value="now">Now Logistics</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Tipo de Auditoría</label>
+                        <select id="audit_tipo" required>
+                            <option value="interna">Interna</option>
+                            <option value="proveedor">A Proveedor</option>
+                            <option value="cliente">De Cliente</option>
+                            <option value="certificacion">De Certificación</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group-row">
+                    <div>
+                        <label>Departamento / Área</label>
+                        <input type="text" id="audit_departamento" placeholder="Ej. Almacén, Compras..." required>
+                    </div>
+                    <div>
+                        <label>Auditor Asignado</label>
+                        <input type="text" id="audit_auditor" placeholder="Nombre del auditor" required>
+                    </div>
+                </div>
+                <div class="form-group-row">
+                    <div>
+                        <label>Título de la Auditoría</label>
+                        <input type="text" id="audit_titulo" placeholder="Ej. Auditoría interna de proceso de recibo" required>
+                    </div>
+                    <div>
+                        <label>Fecha Planificada</label>
+                        <input type="date" id="audit_fecha_planificada" required>
+                    </div>
+                </div>
+                <div class="form-group-row">
+                    <div style="flex:1 1 100%;">
+                        <label>Notas / Alcance (opcional)</label>
+                        <textarea id="audit_notas" rows="2" placeholder="Alcance, norma o procedimiento contra el que se audita, etc."></textarea>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <button type="submit" class="btn-add">📌 Planificar Auditoría</button>
+                </div>
+            </form>
+
+            <h2 class="section-title" style="color: var(--accent-blue);">📋 Auditorías</h2>
+            <div class="form-group-row" style="margin-bottom:6px;">
+                <div>
+                    <label>Filtrar por empresa</label>
+                    <select id="audit_filtro_empresa" onchange="renderAuditorias()">
+                        <option value="todas">Todas</option>
+                        <option value="notions">Notions Dominicana</option>
+                        <option value="gtg">GTG</option>
+                        <option value="now">Now Logistics</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Filtrar por estado</label>
+                    <select id="audit_filtro_estado" onchange="renderAuditorias()">
+                        <option value="todas">Todas</option>
+                        <option value="planificada">Planificada</option>
+                        <option value="en_proceso">En Proceso</option>
+                        <option value="cerrada">Cerrada</option>
+                    </select>
+                </div>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>Título</th><th>Empresa</th><th>Tipo</th><th>Auditor</th><th>Fecha Planificada</th><th>Estado</th><th>Hallazgos Abiertos</th><th>Acción</th></tr>
+                </thead>
+                <tbody id="tablaAuditorias"></tbody>
+            </table>
+
+            <div id="detalleAuditoriaPanel" style="display:none; margin-top:20px; background:white; padding:20px; border-radius:14px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 2px solid var(--accent-blue);"></div>
+
+            <h2 class="section-title" style="color: var(--sec-red);">🚨 Bitácora Permanente de Auditorías (Trazabilidad)</h2>
+            <p style="color:#64748b; margin-top:-10px; font-size:13px;">Cada acción (auditoría planificada, cerrada, hallazgo abierto o cerrado) queda registrada para siempre con fecha y usuario, aunque el registro original se elimine de arriba.</p>
+            <div style="background:white; padding:16px; border-radius:14px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); max-height:320px; overflow-y:auto;">
+                <div id="tablaBitacoraAuditorias" style="display:flex; flex-direction:column; gap:8px; font-size:13px;"></div>
+            </div>
+        </div>
+
         <div id="configuracion" class="section">
             <h1>⚙️ Panel de Configuración del Usuario</h1>
             <p style="color:gray; margin-top:-8px;">Tu foto, tu contraseña y tus preferencias se manejan aquí, para toda la aplicación (incluyendo Inspecciones).</p>
@@ -3098,7 +3194,7 @@ function activarModoSoloIndicadores() {
     document.getElementById("login-screen").style.display = "none";
     document.getElementById("app-content").style.display = "block";
     sessionStorage.setItem("modo_solo_indicadores", "1");
-    ["menu-inicio","menu-actividades","menu-reportes","menu-accidentabilidad","menu-inducciones","menu-asociados","menu-indicadores","menu-jornadas","menu-inspecciones","menu-configuracion"]
+    ["menu-inicio","menu-actividades","menu-reportes","menu-accidentabilidad","menu-inducciones","menu-asociados","menu-indicadores","menu-jornadas","menu-inspecciones","menu-auditorias","menu-configuracion"]
         .forEach(id => { let el = document.getElementById(id); if (el) el.style.display = "none"; });
     showSection("indicadores-pro");
 }
@@ -3126,7 +3222,7 @@ function verificarSesion() {
 
         // Rol "solo campo": únicamente ve Inspecciones, nada más del dashboard.
         let soloInspecciones = usuarioActivo.rol === "colaborador_campo";
-        ["menu-inicio","menu-actividades","menu-reportes","menu-accidentabilidad","menu-inducciones","menu-asociados","menu-indicadores","menu-indicadores-pro","menu-jornadas","menu-configuracion"]
+        ["menu-inicio","menu-actividades","menu-reportes","menu-accidentabilidad","menu-inducciones","menu-asociados","menu-indicadores","menu-indicadores-pro","menu-jornadas","menu-auditorias","menu-configuracion"]
             .forEach(id => { let el = document.getElementById(id); if (el) el.style.display = soloInspecciones ? "none" : ""; });
         if (soloInspecciones) {
             cargarPreferenciasUsuarioActivo();
@@ -3207,6 +3303,7 @@ function showSection(id){
     if(id === 'inicio') rotarSabiasQue();
     if(id === 'indicadores' || id === 'inicio' || id === 'accidentabilidad') updateCharts();
     if(id === 'accidentabilidad' || id === 'inicio') verificarCambioDeAnioAccidentabilidad();
+    if(id === 'auditorias') cargarAuditorias();
     if(id === 'inspecciones' && typeof sesionActual !== 'undefined' && !sesionActual && typeof intentarSesionGuardada === 'function') {
         // Inspecciones solo revisa la sesion una vez, al cargar la pagina (que puede
         // ser ANTES de que hayas iniciado sesion en la macro). Si todavia no tiene
@@ -4705,6 +4802,379 @@ asociadoForm.onsubmit = e => {
     asociadoForm.reset(); ejecutarFiltroGlobal();
     sbSet("asoc", JSON.stringify(asociados));
 };
+
+/* ============================================================
+   MÓDULO DE AUDITORÍAS
+   A diferencia de Accidentabilidad/Inducciones (que usan un blob de
+   JSON en app_data), este módulo usa tablas reales de Supabase
+   (auditorias, auditoria_hallazgos, auditoria_bitacora), porque los
+   hallazgos crecen indefinidamente con el tiempo y tienen una relación
+   real con su auditoría. La bitácora es un log permanente: nunca se
+   borra, aunque se elimine la auditoría o el hallazgo original.
+   ============================================================ */
+let auditorias = [];
+let auditoriaHallazgos = [];
+let auditoriaBitacora = [];
+let auditoriaAbiertaId = null;
+
+function puedeGestionarAuditorias() {
+    return !!usuarioActivo && ["admin", "supervisor", "auditor"].includes(usuarioActivo.rol);
+}
+function esAdminAuditorias() {
+    return !!usuarioActivo && usuarioActivo.rol === "admin";
+}
+
+async function cargarAuditorias() {
+    let { data: aud, error: e1 } = await _sb.from("auditorias").select("*").order("fecha_planificada", { ascending: false });
+    let { data: hal, error: e2 } = await _sb.from("auditoria_hallazgos").select("*").order("creado_en", { ascending: false });
+    let { data: bit, error: e3 } = await _sb.from("auditoria_bitacora").select("*").order("fecha", { ascending: false }).limit(300);
+    if (e1 || e2 || e3) {
+        console.error("Error cargando auditorías:", e1 || e2 || e3);
+        alert("No se pudieron cargar las auditorías: " + ((e1 || e2 || e3).message || "error desconocido"));
+        return;
+    }
+    auditorias = aud || [];
+    auditoriaHallazgos = hal || [];
+    auditoriaBitacora = bit || [];
+    renderAuditorias();
+    renderBitacoraAuditorias();
+}
+
+async function registrarBitacoraAuditoria(tipoEvento, auditoriaId, descripcion) {
+    let registro = { tipo_evento: tipoEvento, auditoria_id: auditoriaId, descripcion: descripcion, usuario: usuarioActivo ? usuarioActivo.nombre : "Sistema" };
+    let { data, error } = await _sb.from("auditoria_bitacora").insert(registro).select();
+    if (!error && data && data[0]) auditoriaBitacora.unshift(data[0]);
+    else if (error) console.error("No se pudo registrar en bitácora de auditorías:", error);
+}
+
+async function guardarNuevaAuditoria(event) {
+    event.preventDefault();
+    let nuevo = {
+        empresa: document.getElementById("audit_empresa").value,
+        tipo: document.getElementById("audit_tipo").value,
+        departamento: document.getElementById("audit_departamento").value.trim(),
+        auditor_nombre: document.getElementById("audit_auditor").value.trim(),
+        titulo: document.getElementById("audit_titulo").value.trim(),
+        fecha_planificada: document.getElementById("audit_fecha_planificada").value,
+        notas: document.getElementById("audit_notas").value.trim(),
+        estado: "planificada",
+        creado_por: usuarioActivo ? usuarioActivo.nombre : "Sistema"
+    };
+    let { data, error } = await _sb.from("auditorias").insert(nuevo).select();
+    if (error) { alert("No se pudo guardar la auditoría: " + error.message); return; }
+    auditorias.unshift(data[0]);
+    await registrarBitacoraAuditoria("auditoria_creada", data[0].id, `Se planificó la auditoría "${nuevo.titulo}" (${nuevo.empresa.toUpperCase()}, ${nuevo.tipo}) para el ${nuevo.fecha_planificada}.`);
+    document.getElementById("auditForm").reset();
+    renderAuditorias();
+    renderBitacoraAuditorias();
+}
+
+function nombreEmpresaAuditoria(key) { return { notions: "Notions Dominicana", gtg: "GTG", now: "Now Logistics" }[key] || key; }
+function nombreTipoAuditoria(tipo) { return { interna: "Interna", proveedor: "A Proveedor", cliente: "De Cliente", certificacion: "De Certificación" }[tipo] || tipo; }
+function badgeEstadoAuditoria(estado) {
+    if (estado === "cerrada") return `<span class="badge-nivel badge-adecuado">Cerrada</span>`;
+    if (estado === "en_proceso") return `<span class="badge-nivel badge-medio">En Proceso</span>`;
+    return `<span class="badge-nivel" style="background:#e2e8f0; color:#475569;">Planificada</span>`;
+}
+function badgeSeveridadHallazgo(sev) {
+    if (sev === "critica") return `<span class="badge-nivel badge-bajo">Crítica</span>`;
+    if (sev === "mayor") return `<span class="badge-nivel badge-medio">Mayor</span>`;
+    return `<span class="badge-nivel badge-adecuado">Menor</span>`;
+}
+
+function renderAuditorias() {
+    let cont = document.getElementById("tablaAuditorias");
+    if (!cont) return;
+
+    let filtroEmpresa = document.getElementById("audit_filtro_empresa")?.value || "todas";
+    let filtroEstado = document.getElementById("audit_filtro_estado")?.value || "todas";
+
+    let lista = auditorias.filter(a => {
+        if (filtroEmpresa !== "todas" && a.empresa !== filtroEmpresa) return false;
+        if (filtroEstado !== "todas" && a.estado !== filtroEstado) return false;
+        return true;
+    });
+
+    cont.innerHTML = lista.length === 0
+        ? `<tr><td colspan="8" style="text-align:center; color:#94a3b8;">No hay auditorías que coincidan con el filtro.</td></tr>`
+        : lista.map(a => {
+            let hallazgosAbiertos = auditoriaHallazgos.filter(h => h.auditoria_id === a.id && h.estado === "abierto").length;
+            return `
+            <tr>
+                <td>${a.titulo}</td>
+                <td>${nombreEmpresaAuditoria(a.empresa)}</td>
+                <td>${nombreTipoAuditoria(a.tipo)}</td>
+                <td>${a.auditor_nombre}</td>
+                <td>${a.fecha_planificada}</td>
+                <td>${badgeEstadoAuditoria(a.estado)}</td>
+                <td>${hallazgosAbiertos > 0 ? `<span class="badge-nivel badge-bajo">${hallazgosAbiertos} abierto(s)</span>` : `<span class="badge-nivel badge-adecuado">0</span>`}</td>
+                <td><button class="btn-add" style="padding:4px 10px; font-size:12px;" onclick="verDetalleAuditoria('${a.id}')">Ver / Gestionar</button></td>
+            </tr>`;
+        }).join("");
+
+    let totalPlanificadas = auditorias.length;
+    let totalCerradas = auditorias.filter(a => a.estado === "cerrada").length;
+    let cumplimientoPct = totalPlanificadas > 0 ? ((totalCerradas / totalPlanificadas) * 100).toFixed(0) : "—";
+    let totalHallazgosAbiertos = auditoriaHallazgos.filter(h => h.estado === "abierto").length;
+    let totalHallazgosCerrados = auditoriaHallazgos.filter(h => h.estado === "cerrado").length;
+
+    let cards = document.getElementById("auditCardsResumen");
+    if (cards) {
+        cards.innerHTML = `
+        <div class="kpi-card"><h4>Auditorías Planificadas</h4><div class="val">${totalPlanificadas}</div><div class="sub">Histórico total</div></div>
+        <div class="kpi-card"><h4>Auditorías Cerradas</h4><div class="val">${totalCerradas}</div><div class="sub">${cumplimientoPct}% del total planificado</div></div>
+        <div class="kpi-card"><h4>Hallazgos Abiertos</h4><div class="val" style="${totalHallazgosAbiertos > 0 ? 'color:var(--sec-red);' : ''}">${totalHallazgosAbiertos}</div><div class="sub">Pendientes de cerrar</div></div>
+        <div class="kpi-card"><h4>Hallazgos Cerrados</h4><div class="val">${totalHallazgosCerrados}</div><div class="sub">Acciones correctivas completadas</div></div>`;
+    }
+
+    if (auditoriaAbiertaId) renderDetalleAuditoria(auditoriaAbiertaId);
+}
+
+function verDetalleAuditoria(id) {
+    auditoriaAbiertaId = id;
+    document.getElementById("detalleAuditoriaPanel").style.display = "block";
+    renderDetalleAuditoria(id);
+    document.getElementById("detalleAuditoriaPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function cerrarDetalleAuditoria() {
+    auditoriaAbiertaId = null;
+    let panel = document.getElementById("detalleAuditoriaPanel");
+    if (panel) panel.style.display = "none";
+}
+
+function renderDetalleAuditoria(id) {
+    let a = auditorias.find(x => x.id === id);
+    let panel = document.getElementById("detalleAuditoriaPanel");
+    if (!a || !panel) { if (panel) panel.style.display = "none"; return; }
+
+    let hallazgos = auditoriaHallazgos.filter(h => h.auditoria_id === id);
+    let puedeGestionar = puedeGestionarAuditorias();
+    let esAdmin = esAdminAuditorias();
+
+    let filasHallazgos = hallazgos.length === 0
+        ? `<tr><td colspan="6" style="text-align:center; color:#94a3b8;">Todavía no hay hallazgos registrados.</td></tr>`
+        : hallazgos.map(h => `
+            <tr>
+                <td>${h.descripcion}${h.evidencia_url ? ` <a href="${h.evidencia_url}" target="_blank">📎 Evidencia</a>` : ""}</td>
+                <td>${badgeSeveridadHallazgo(h.severidad)}</td>
+                <td>${h.responsable}</td>
+                <td>${h.fecha_limite || "—"}</td>
+                <td>${h.estado === "cerrado" ? `<span class="badge-nivel badge-adecuado">Cerrado ${h.fecha_cierre ? "el " + h.fecha_cierre : ""}</span>` : `<span class="badge-nivel badge-bajo">Abierto</span>`}</td>
+                <td>
+                    ${h.estado === "abierto" && puedeGestionar ? `<button class="btn-add" style="padding:3px 8px; font-size:11px;" onclick="cerrarHallazgo('${h.id}')">✅ Cerrar</button>` : ""}
+                    ${esAdmin ? `<button style="padding:3px 8px; font-size:11px; background:var(--sec-red); color:white; border:none; border-radius:6px; cursor:pointer;" onclick="eliminarHallazgo('${h.id}')">🗑️</button>` : ""}
+                </td>
+            </tr>`).join("");
+
+    panel.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+                <h2 style="margin:0;">${a.titulo}</h2>
+                <p style="color:#64748b; margin:4px 0 0 0; font-size:13px;">${nombreEmpresaAuditoria(a.empresa)} · ${nombreTipoAuditoria(a.tipo)} · ${a.departamento} · Auditor: ${a.auditor_nombre}</p>
+                <p style="margin:6px 0 0 0;">${badgeEstadoAuditoria(a.estado)} &nbsp; Planificada: ${a.fecha_planificada}${a.fecha_ejecucion ? " &nbsp;·&nbsp; Ejecutada: " + a.fecha_ejecucion : ""}</p>
+                ${a.notas ? `<p style="margin-top:8px; font-size:13px; color:#475569;">📝 ${a.notas}</p>` : ""}
+            </div>
+            <button onclick="cerrarDetalleAuditoria()" style="background:none; border:none; font-size:20px; cursor:pointer; color:#94a3b8;">✖</button>
+        </div>
+
+        ${puedeGestionar ? `
+        <div style="margin-top:16px; display:flex; gap:8px; flex-wrap:wrap;">
+            ${a.estado === "planificada" ? `<button class="btn-add" onclick="marcarAuditoriaEjecutada('${a.id}')">▶️ Marcar como Ejecutada / En Proceso</button>` : ""}
+            ${a.estado !== "cerrada" ? `<button class="btn-add" style="background:var(--accent-blue);" onclick="cerrarAuditoria('${a.id}')">🏁 Cerrar Auditoría</button>` : ""}
+            ${esAdmin ? `<button style="background:var(--sec-red); color:white; border:none; padding:8px 14px; border-radius:8px; cursor:pointer;" onclick="eliminarAuditoria('${a.id}')">🗑️ Eliminar Auditoría</button>` : ""}
+        </div>` : ""}
+
+        <h3 style="margin-top:22px;">Hallazgos / No Conformidades</h3>
+        <table>
+            <thead><tr><th>Descripción</th><th>Severidad</th><th>Responsable</th><th>Fecha Límite</th><th>Estado</th><th>Acción</th></tr></thead>
+            <tbody>${filasHallazgos}</tbody>
+        </table>
+
+        ${puedeGestionar ? `
+        <h4 style="margin-top:18px;">➕ Agregar Hallazgo</h4>
+        <form onsubmit="guardarNuevoHallazgo(event, '${a.id}')">
+            <div class="form-group-row">
+                <div style="flex:1 1 100%;">
+                    <label>Descripción del hallazgo</label>
+                    <textarea id="hallazgo_descripcion_${a.id}" rows="2" required></textarea>
+                </div>
+            </div>
+            <div class="form-group-row">
+                <div>
+                    <label>Severidad</label>
+                    <select id="hallazgo_severidad_${a.id}">
+                        <option value="menor">Menor</option>
+                        <option value="mayor">Mayor</option>
+                        <option value="critica">Crítica</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Responsable de Corregir</label>
+                    <input type="text" id="hallazgo_responsable_${a.id}" required>
+                </div>
+                <div>
+                    <label>Fecha Límite</label>
+                    <input type="date" id="hallazgo_fecha_limite_${a.id}" required>
+                </div>
+            </div>
+            <div class="form-group-row">
+                <div>
+                    <label>Evidencia fotográfica (opcional)</label>
+                    <input type="file" accept="image/*" capture="environment" id="hallazgo_foto_${a.id}" onchange="adjuntarFotoHallazgo(this, '${a.id}')">
+                    <input type="hidden" id="hallazgo_foto_url_${a.id}">
+                    <small id="hallazgo_foto_estado_${a.id}" style="color:#64748b;"></small>
+                </div>
+            </div>
+            <div class="form-row">
+                <button type="submit" class="btn-add">💾 Guardar Hallazgo</button>
+            </div>
+        </form>` : ""}
+    `;
+}
+
+// Misma técnica de compresión (900px, JPEG 0.6) que ya usa Inspecciones para evidencias,
+// subida al mismo bucket "evidencias" pero bajo su propia carpeta "auditorias/".
+function adjuntarFotoHallazgo(input, auditoriaId) {
+    let file = input.files[0];
+    if (!file) return;
+    let estadoEl = document.getElementById(`hallazgo_foto_estado_${auditoriaId}`);
+    let reader = new FileReader();
+    reader.onload = function(e) {
+        let img = new Image();
+        img.onload = function() {
+            let maxW = 900;
+            let escala = Math.min(1, maxW / img.width);
+            let canvas = document.createElement("canvas");
+            canvas.width = img.width * escala;
+            canvas.height = img.height * escala;
+            canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob(async function(blob) {
+                if (estadoEl) estadoEl.innerText = "Subiendo evidencia...";
+                let ruta = `auditorias/${auditoriaId}/${Date.now()}.jpg`;
+                let { error } = await _sb.storage.from("evidencias").upload(ruta, blob, { contentType: "image/jpeg" });
+                if (error) { if (estadoEl) estadoEl.innerText = "❌ No se pudo subir: " + error.message; return; }
+                let { data: pub } = _sb.storage.from("evidencias").getPublicUrl(ruta);
+                let campoUrl = document.getElementById(`hallazgo_foto_url_${auditoriaId}`);
+                if (campoUrl) campoUrl.value = pub.publicUrl;
+                if (estadoEl) estadoEl.innerText = "✅ Evidencia subida";
+            }, "image/jpeg", 0.6);
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+async function guardarNuevoHallazgo(event, auditoriaId) {
+    event.preventDefault();
+    let nuevo = {
+        auditoria_id: auditoriaId,
+        descripcion: document.getElementById(`hallazgo_descripcion_${auditoriaId}`).value.trim(),
+        severidad: document.getElementById(`hallazgo_severidad_${auditoriaId}`).value,
+        responsable: document.getElementById(`hallazgo_responsable_${auditoriaId}`).value.trim(),
+        fecha_limite: document.getElementById(`hallazgo_fecha_limite_${auditoriaId}`).value,
+        evidencia_url: document.getElementById(`hallazgo_foto_url_${auditoriaId}`).value || null,
+        estado: "abierto",
+        creado_por: usuarioActivo ? usuarioActivo.nombre : "Sistema"
+    };
+    let { data, error } = await _sb.from("auditoria_hallazgos").insert(nuevo).select();
+    if (error) { alert("No se pudo guardar el hallazgo: " + error.message); return; }
+    auditoriaHallazgos.unshift(data[0]);
+    let a = auditorias.find(x => x.id === auditoriaId);
+    if (a && a.estado === "planificada") {
+        await _sb.from("auditorias").update({ estado: "en_proceso" }).eq("id", auditoriaId);
+        a.estado = "en_proceso";
+    }
+    await registrarBitacoraAuditoria("hallazgo_creado", auditoriaId, `Se registró un hallazgo (${nuevo.severidad}) en "${a ? a.titulo : ''}": ${nuevo.descripcion}`);
+    renderAuditorias();
+    renderBitacoraAuditorias();
+}
+
+async function cerrarHallazgo(hallazgoId) {
+    if (!puedeGestionarAuditorias()) { alert("No tienes permiso para cerrar hallazgos."); return; }
+    if (!confirm("¿Confirmar que este hallazgo ya fue corregido y se puede cerrar?")) return;
+    let hoy = new Date().toISOString().split("T")[0];
+    let { error } = await _sb.from("auditoria_hallazgos").update({ estado: "cerrado", fecha_cierre: hoy, cerrado_por: usuarioActivo.nombre }).eq("id", hallazgoId);
+    if (error) { alert("No se pudo cerrar el hallazgo: " + error.message); return; }
+    let h = auditoriaHallazgos.find(x => x.id === hallazgoId);
+    if (h) { h.estado = "cerrado"; h.fecha_cierre = hoy; h.cerrado_por = usuarioActivo.nombre; }
+    await registrarBitacoraAuditoria("hallazgo_cerrado", h ? h.auditoria_id : null, `Se cerró el hallazgo: ${h ? h.descripcion : ""}`);
+    renderAuditorias();
+    renderBitacoraAuditorias();
+}
+
+async function eliminarHallazgo(hallazgoId) {
+    if (!esAdminAuditorias()) { alert("⛔ Solo el Administrador puede eliminar hallazgos."); return; }
+    if (!confirm("⚠️ ¿Eliminar permanentemente este hallazgo? Esta acción no se puede deshacer (quedará constancia en la bitácora).")) return;
+    let h = auditoriaHallazgos.find(x => x.id === hallazgoId);
+    let { error } = await _sb.from("auditoria_hallazgos").delete().eq("id", hallazgoId);
+    if (error) { alert("No se pudo eliminar: " + error.message); return; }
+    auditoriaHallazgos = auditoriaHallazgos.filter(x => x.id !== hallazgoId);
+    await registrarBitacoraAuditoria("hallazgo_eliminado", h ? h.auditoria_id : null, `Se eliminó el hallazgo: ${h ? h.descripcion : ""}`);
+    renderAuditorias();
+    renderBitacoraAuditorias();
+}
+
+async function marcarAuditoriaEjecutada(auditoriaId) {
+    let hoy = new Date().toISOString().split("T")[0];
+    let { error } = await _sb.from("auditorias").update({ estado: "en_proceso", fecha_ejecucion: hoy }).eq("id", auditoriaId);
+    if (error) { alert("No se pudo actualizar la auditoría: " + error.message); return; }
+    let a = auditorias.find(x => x.id === auditoriaId);
+    if (a) { a.estado = "en_proceso"; a.fecha_ejecucion = hoy; }
+    await registrarBitacoraAuditoria("auditoria_ejecutada", auditoriaId, `Se marcó como ejecutada la auditoría "${a ? a.titulo : ''}".`);
+    renderAuditorias();
+    renderBitacoraAuditorias();
+}
+
+async function cerrarAuditoria(auditoriaId) {
+    let abiertos = auditoriaHallazgos.filter(h => h.auditoria_id === auditoriaId && h.estado === "abierto").length;
+    if (abiertos > 0 && !confirm(`⚠️ Esta auditoría todavía tiene ${abiertos} hallazgo(s) abierto(s). ¿Cerrar de todas formas? (los hallazgos se quedan pendientes, con su propia fecha límite, hasta que se cierren aparte)`)) return;
+    let a = auditorias.find(x => x.id === auditoriaId);
+    let hoy = new Date().toISOString().split("T")[0];
+    let { error } = await _sb.from("auditorias").update({ estado: "cerrada", fecha_ejecucion: (a && a.fecha_ejecucion) || hoy }).eq("id", auditoriaId);
+    if (error) { alert("No se pudo cerrar la auditoría: " + error.message); return; }
+    if (a) { a.estado = "cerrada"; if (!a.fecha_ejecucion) a.fecha_ejecucion = hoy; }
+    await registrarBitacoraAuditoria("auditoria_cerrada", auditoriaId, `Se cerró la auditoría "${a ? a.titulo : ''}"${abiertos > 0 ? ` con ${abiertos} hallazgo(s) todavía abierto(s)` : ""}.`);
+    renderAuditorias();
+    renderBitacoraAuditorias();
+}
+
+async function eliminarAuditoria(auditoriaId) {
+    if (!esAdminAuditorias()) { alert("⛔ Solo el Administrador puede eliminar auditorías."); return; }
+    if (!confirm("⚠️ ¿Eliminar permanentemente esta auditoría y todos sus hallazgos? Esta acción no se puede deshacer (quedará constancia en la bitácora).")) return;
+    let a = auditorias.find(x => x.id === auditoriaId);
+    let { error } = await _sb.from("auditorias").delete().eq("id", auditoriaId);
+    if (error) { alert("No se pudo eliminar: " + error.message); return; }
+    auditorias = auditorias.filter(x => x.id !== auditoriaId);
+    auditoriaHallazgos = auditoriaHallazgos.filter(x => x.auditoria_id !== auditoriaId);
+    cerrarDetalleAuditoria();
+    await registrarBitacoraAuditoria("auditoria_eliminada", auditoriaId, `Se eliminó la auditoría "${a ? a.titulo : ''}" y todos sus hallazgos.`);
+    renderAuditorias();
+    renderBitacoraAuditorias();
+}
+
+function renderBitacoraAuditorias() {
+    let cont = document.getElementById("tablaBitacoraAuditorias");
+    if (!cont) return;
+    if (auditoriaBitacora.length === 0) {
+        cont.innerHTML = `<div style="color:#94a3b8; text-align:center;">Todavía no hay eventos registrados.</div>`;
+        return;
+    }
+    const etiquetas = {
+        auditoria_creada: "🗓️ Auditoría planificada",
+        auditoria_ejecutada: "▶️ Auditoría ejecutada",
+        auditoria_cerrada: "🏁 Auditoría cerrada",
+        auditoria_eliminada: "🗑️ Auditoría eliminada",
+        hallazgo_creado: "🚩 Hallazgo registrado",
+        hallazgo_cerrado: "✅ Hallazgo cerrado",
+        hallazgo_eliminado: "🗑️ Hallazgo eliminado"
+    };
+    cont.innerHTML = auditoriaBitacora.map(ev => `
+        <div style="border-left:3px solid var(--accent-blue); padding:6px 10px; background:#f8fafc; border-radius:6px;">
+            <strong>${etiquetas[ev.tipo_evento] || ev.tipo_evento}</strong> — ${ev.descripcion}
+            <br><small style="color:#94a3b8;">${new Date(ev.fecha).toLocaleString()} · ${ev.usuario}</small>
+        </div>`).join("");
+}
 
 /* EXPORTS */
 function descargarCSV(contenido, nombreArchivo) {
